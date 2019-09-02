@@ -1,0 +1,15 @@
+---
+title: "Cleaning Data"
+author: "Group 1"
+date: "02/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load()
+```
+# Cleaning the Data using REGEX etc
+
+```{r}
+
+```

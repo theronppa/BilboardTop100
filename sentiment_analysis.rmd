@@ -1,0 +1,10 @@
+---
+title: "Sentiment Analysis"
+author: "Group 1"
+date: "02/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(sentimentr)
+```
