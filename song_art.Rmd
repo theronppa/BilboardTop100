@@ -75,19 +75,24 @@ Artist4 <- as_tbl_graph(Artist2)
 
 
 
-
+Try above but for more artist
+```{r}
+Big <- lyrics%>%
+      filter(year == 1961)%>%
+      group_by(artist)
+```
 
 ```{r}
+Big$lyrics <- NULL
+Big1 <- as_tbl_graph(Big, directed = T)
+```
+
+
+
+A Mistake ( compressed songs to one node)
+```{}
 library(graphlayouts)
 SM %>%
-  ggraph(layout = 'stress') + 
-    geom_edge_link() + 
-    geom_node_point(size = 8, colour = 'steelblue') +
-    geom_node_text(aes(label = name), colour = 'black', vjust = 0.4) + 
-    ggtitle('Binding graphs') + 
-    theme_graph()
-
-Artist4 %>%
   ggraph(layout = 'stress') + 
     geom_edge_link() + 
     geom_node_point(size = 8, colour = 'steelblue') +
@@ -97,9 +102,41 @@ Artist4 %>%
 ```
 
 
+Worked ( songs connedcted to artist)
+```{r}
+Artist4 %>%
+  ggraph(layout = 'stress') + 
+    geom_edge_link() + 
+    geom_node_point(size = 8, colour = 'steelblue') +
+    geom_node_text(aes(label = name), colour = 'black', vjust = 0.4) + 
+    ggtitle('Artist & Songs') + 
+    theme_graph()
+```
+
+Try above but with Big *see78
+```{r}
+Big1 %>%
+  ggraph(layout = 'kk')+
+    geom_edge_link() + 
+    geom_node_point(size = 5, colour = 'steelblue') +
+    geom_node_text(aes(label = name), colour = 'black', vjust = 0.4) + 
+    ggtitle('Binding graphs') + 
+    theme_graph()
+```   
+    
+```{r}
+Big1 %>% 
+    mutate(# apply functions on the node level using mutate
+      deg = centrality_degree(mode = "all"), # calculate degree
+      indeg = centrality_degree(mode = "in"), # calculate indegree
+      outdeg = centrality_degree(mode = "out"),# calculate outdegree
+    )
+```
 
 
-
+```{r}
+str(Big)
+```
 
 
 
