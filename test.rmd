@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-pacman::p_load(spotifyr, tidygraph, billboard, Rspotify, dplyr, ggplot2)
+pacman::p_load(spotifyr, tidygraph, billboard, Rspotify, dplyr, ggplot2, igraph, ggraph, tidyverse,tibble, graphlayouts)
 ```
 
 ```{r}
@@ -29,7 +29,7 @@ data(wiki_hot_100s, package = 'billboard')
 original <- as.data.frame(lyrics)
 
 test_graph <- as_tbl_graph(lyrics) %>%
-  convert(to_undirected) %>%
+  convert(to_directed) %>%
   mutate(labels = group_label_prop(),
          cent_d = centrality_degree(mode = "all"),
          cent_out = centrality_degree(mode = "out"),
@@ -42,27 +42,41 @@ new_graph <- original %>%
   left_join(test_graph, by = "title") %>%
   select(title, artist, year, lyrics, labels, cent_d, cent_out, cent_in, cent_bwtn)
 
-ranks <- wiki_hot_100s %>%
+test_graph <- wiki_hot_100s %>%
   select(no) %>%
   cbind(new_graph) %>%
   rename("rank" = no)
 
-class(ranks$no)
+elvis_filter <- test_graph %>%
+  select(artist, title) %>%
+  group_by(artist) %>%
+  filter(artist == "Elvis Presley")
 
-test1 <- ranks %>%
+elvis <- as_tbl_graph(elvis_filter)
+elvis %>%
+  #filter(name == "Elvis Presley") %>%
+  ggraph(layout = 'stress') + 
+    geom_edge_link() + 
+    geom_node_point(size = 8, colour = 'steelblue') +
+    geom_node_text(aes(label = name), colour = 'black', vjust = 0.4) + 
+    ggtitle('Binding graphs') + 
+    theme_graph()
+
+frequent_artists <- test_graph %>%
   select(artist, title) %>%
   group_by(artist) %>%
   as_tbl_graph(directed = T) %>%
   activate(nodes) %>%
-  mutate(test = centrality_degree(mode = "all"))
+  mutate(deg = centrality_degree(mode = "all")) %>%
+  filter(deg > 15)
 
-final <- test1 %>%
-  rename('artist' = name) %>%
-  left_join(ranks, by = "artist") 
-```
-
-```{r}
-keys <- spotifyOAuth("billboard_100","a1ab0e500cd84b2ab336c6a4eb2b3b29","471f70c3e1c74ed8b75ea23656b8481c")
+frequent_artists %>%
+  ggraph(layout = 'stress') + 
+    geom_edge_link() + 
+    geom_node_point(size = 8, colour = 'steelblue') +
+    geom_node_text(aes(label = name), colour = 'black', vjust = 0.4) + 
+    ggtitle('Frequent Artists') + 
+    theme_graph()
 ```
 
 
