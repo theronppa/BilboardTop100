@@ -6,5 +6,132 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-pacman::p_load(sentimentr)
+pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,RcolorBrewer,stringr,ggraph)
+```
+
+#Getting the data - subject to change
+```{r}
+data(lyrics, package = 'billboard')
+data(wiki_hot_100s, package = 'billboard')
+
+
+lyrics
+as_tbl_graph(lyrics)
+wiki_hot_100s
+
+lyrics_only <- lyrics%>%
+  select(lyrics)
+
+lyrics_tidy <- as_tbl_graph(lyrics)
+
+ranked_data <- wiki_hot_100s%>%
+  cbind(lyrics_only)
+
+ranked_data <- mutate(ranked_data, id = rownames(ranked_data))
+
+```
+
+Some pre processing cleaning
+Adding the stopwords for term frequence - to detect filthy data
+
+```{r}
+all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_smart$en,"the",'" The"',"told", "and.")
+all_stops <- data.frame(all_stops)
+colnames(all_stops) <- "word"
+```
+Doing term frequency on the lyrics column and unnesting the words to find the most common terms and dirty data.
+```{r eval=FALSE}
+Terms <- ranked_data %>%
+  unnest_tokens(word,lyrics) %>%
+  anti_join(all_stops, by = 'word')%>%
+  count(word, sort = TRUE)%>%
+  mutate(len=nchar(word))
+
+```
+
+Cleaning some of the data
+```{r}
+ranked_data <- as.data.table(ranked_data)
+ranked_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", ranked_data$lyrics)
+
+ranked_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
+ranked_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", ranked_data$lyrics)
+```
+
+
+Running sentiment
+```{r eval=False}
+
+ranked_data <- ranked_data%>%
+  sample_frac(0.5)
+
+sent <- sentiment_by(ranked_data$lyrics,  #does not run that long. EZ
+               polarity_dt = lexicon::hash_sentiment_jockers_rinker,
+               valence_shifters_dt = lexicon::hash_valence_shifters,
+               averaging.function = sentimentr::average_weighted_mixed_sentiment,
+               hyphen = " ",
+               amplifier.weight = 2, 
+               n.before = 3, 
+               n.after = 3,
+               question.weight = 0, 
+               adversative.weight = 0.25,
+               neutral.nonverb.like = TRUE,
+            
+)
+
+sent_tot <- ranked_data%>%
+  cbind(sent)%>%
+  select(title,artist,lyrics,year,ave_sentiment)
+
+sent_tot_tbl <- sent_tot%>%
+  select(artist,title)%>%
+  group_by(artist)%>%
+  as_tbl_graph()%>%
+  activate(nodes)
+
+plot(sent_tot$year,sent_tot$ave_sentiment)
+
+sent_neg <- sent_tot%>%
+  filter(ave_sentiment < 0)%>%
+  arrange(desc(ave_sentiment))
+
+```
+
+Create a word Cloud
+```{r}
+
+corpus <- Corpus(VectorSource(ranked_data$lyrics))
+dtm <- TermDocumentMatrix(corpus)
+
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+d <- d%>%
+  anti_join(stop_words, by = "word")
+head(d, 10)
+
+```
+The Word Cloud of all the lyrics.
+```{r}
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+Out of all the years, who has been the most frequent?  (Random question we can add later????)
+```{r}
+most_frequent <- ranked_data%>%
+  select(artist,title)%>%
+  group_by(artist)%>%
+  as_tbl_graph()%>%
+  activate(nodes)%>%
+  mutate(
+    deg = centrality_degree()
+  )%>%
+filter(deg > 15)
+
+
+plot(most_frequent)
 ```
