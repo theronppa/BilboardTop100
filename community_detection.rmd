@@ -6,7 +6,36 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-pacman::p_load(tidygraph, tidyverse, igraph)
+pacman::p_load(tidygraph, tidyverse, igraph, ggraph, ggplot2, dplyr)
 ```
 
 # Community Detection
+```{r}
+data(lyrics, package='billboard')
+data(wiki_hot_100s, package = 'billboard')
+
+original <- as.data.frame(lyrics)
+
+test_graph <- as_tbl_graph(lyrics) %>%
+  convert(to_undirected) %>%
+  mutate(comm = group_infomap(),
+         cent_d = centrality_degree(mode = "all"),
+         cent_out = centrality_degree(mode = "out"),
+         cent_in = centrality_degree(mode = "in")) %>%
+  rename('title' = name) %>%
+  convert(to_directed) %>%
+  as.data.frame()
+
+
+new_graph <- original %>%
+  left_join(test_graph, by = "title") %>%
+  select(title, artist, year, lyrics, comm, cent_d, cent_out, cent_in)
+
+plot_comm <- as_tbl_graph(new_graph) %>%
+  activate(edges) %>%
+  group_by(comm) %>%
+  filter(cent_d > 50)
+
+plot(plot_comm)
+```
+
