@@ -111,6 +111,18 @@ d <- d%>%
   anti_join(stop_words, by = "word")
 head(d, 10)
 
+#Word cloud on artists instead
+corpus_artist <- Corpus(VectorSource(ranked_data$artist))
+dtm_artist <- TermDocumentMatrix(corpus)
+
+m_artist <- as.matrix(dtm_artist)
+v_artist <- sort(rowSums(m_artist),decreasing=TRUE)
+d_artist <- data.frame(word = names(v_artist),freq=v)
+
+d_artist <- d%>%
+  anti_join(stop_words, by = "word")
+head(d_artist, 10)
+
 ```
 The Word Cloud of all the lyrics.
 ```{r}
@@ -130,7 +142,7 @@ most_frequent <- ranked_data%>%
   mutate(
     deg = centrality_degree()
   )%>%
-filter(deg > 15)
+filter(deg > 10)
 
 
 plot(most_frequent)
