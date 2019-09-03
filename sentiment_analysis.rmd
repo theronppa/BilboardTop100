@@ -32,9 +32,9 @@ ranked_data <- mutate(ranked_data, id = rownames(ranked_data))
 ```
 
 Some pre processing cleaning
-Adding the stopwords for term frequence - to detect filthy data
-
-```{r}
+Adding the stopwords for term frequence - to detect filthy data.
+Don't take it out need stopwords for the WordCloud - run manually when needed.
+```{r eval = False}
 all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_smart$en,"the",'" The"',"told", "and.")
 all_stops <- data.frame(all_stops)
 colnames(all_stops) <- "word"
@@ -50,7 +50,7 @@ Terms <- ranked_data %>%
 ```
 
 Cleaning some of the data
-```{r}
+```{r eval = FALSE}
 ranked_data <- as.data.table(ranked_data)
 ranked_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", ranked_data$lyrics)
 
