@@ -1,0 +1,114 @@
+---
+title: "Network-ArtSong"
+author: "Dream team"
+date: "03/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggraph)
+library(billboard)
+library(genius)
+library(geniusr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(tibble)
+library(tidygraph)
+library(textclean)
+library(tidytext)
+```
+
+
+
+#Fetched DATA
+```{r}
+
+if (require("dplyr")) {
+  data(lyrics)
+  lyrics %>% glimpse()
+}
+
+
+if (require("dplyr")) {
+  data(spotify_track_data)
+  spotify_track_data %>% glimpse()
+}
+
+if (require("dplyr")) {
+
+  data(spotify_playlists)
+
+  spotify_playlists %>% glimpse()
+
+}
+
+
+
+```
+
+
+```{r}
+Artist <- lyrics %>%
+  group_by(artist) %>%
+   summarise(title = paste(title, collapse=", "))
+```
+
+```{r}
+Net_try <- as_tbl_graph(Artist, directed = T)
+
+smol_NET <-Artist %>%
+              filter(artist == "Elvis Presley")
+SM <- as_tbl_graph(smol_NET)
+```
+
+```{r}
+Artist2 <- lyrics %>%
+  filter(artist == "Elvis Presley")
+
+Artist4 <- as_tbl_graph(Artist2)
+```
+
+
+
+
+
+```{r}
+library(graphlayouts)
+SM %>%
+  ggraph(layout = 'stress') + 
+    geom_edge_link() + 
+    geom_node_point(size = 8, colour = 'steelblue') +
+    geom_node_text(aes(label = name), colour = 'black', vjust = 0.4) + 
+    ggtitle('Binding graphs') + 
+    theme_graph()
+
+Artist4 %>%
+  ggraph(layout = 'stress') + 
+    geom_edge_link() + 
+    geom_node_point(size = 8, colour = 'steelblue') +
+    geom_node_text(aes(label = name), colour = 'black', vjust = 0.4) + 
+    ggtitle('Binding graphs') + 
+    theme_graph()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
