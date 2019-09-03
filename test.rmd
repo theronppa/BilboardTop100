@@ -1,0 +1,68 @@
+---
+title: "test"
+author: "Group 1"
+date: "03/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(spotifyr, tidygraph, billboard, Rspotify, dplyr, ggplot2)
+```
+
+```{r}
+client_id = Sys.setenv(SPOTIFY_CLIENT_ID = 'a1ab0e500cd84b2ab336c6a4eb2b3b29')
+client_secret = Sys.setenv(SPOTIFY_CLIENT_SECRET = '471f70c3e1c74ed8b75ea23656b8481c')
+token <- get_spotify_access_token()
+
+playlist <- get_playlist('37IRJrV9jd0LnsFTIY83ax', fields = c("tracks.items.track.artists.name", "tracks.items.track.name"), authorization = token) %>%
+  as.data.frame()
+
+all_fields <- get_playlist('37IRJrV9jd0LnsFTIY83ax', fields = NULL, authorization = token)
+
+
+```
+
+```{r}
+data(lyrics, package='billboard')
+data(wiki_hot_100s, package = 'billboard')
+
+original <- as.data.frame(lyrics)
+
+test_graph <- as_tbl_graph(lyrics) %>%
+  convert(to_undirected) %>%
+  mutate(labels = group_label_prop(),
+         cent_d = centrality_degree(mode = "all"),
+         cent_out = centrality_degree(mode = "out"),
+         cent_in = centrality_degree(mode = "in"),
+         cent_bwtn = centrality_betweenness()) %>%
+  rename('title' = name) %>%
+  as.data.frame()
+
+new_graph <- original %>%
+  left_join(test_graph, by = "title") %>%
+  select(title, artist, year, lyrics, labels, cent_d, cent_out, cent_in, cent_bwtn)
+
+ranks <- wiki_hot_100s %>%
+  select(no) %>%
+  cbind(new_graph) %>%
+  rename("rank" = no)
+
+class(ranks$no)
+
+test1 <- ranks %>%
+  select(artist, title) %>%
+  group_by(artist) %>%
+  as_tbl_graph(directed = T) %>%
+  activate(nodes) %>%
+  mutate(test = centrality_degree(mode = "all"))
+
+final <- test1 %>%
+  rename('artist' = name) %>%
+  left_join(ranks, by = "artist") 
+```
+
+```{r}
+keys <- spotifyOAuth("billboard_100","a1ab0e500cd84b2ab336c6a4eb2b3b29","471f70c3e1c74ed8b75ea23656b8481c")
+```
+
+
