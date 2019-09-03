@@ -1,12 +1,155 @@
 ---
-title: "Pulling New Data"
-author: "Group 1"
-date: "02/09/2019"
-output: html_document
+title: "R Notebook"
+output: html_notebook
 ---
 
-```{r setup, include=FALSE}
-pacman::p_load()
+
+
+```{r}
+pacman::p_load(billboard, rvest, genius, tidyverse)
 ```
 
-# Pulling and scraping data
+```{r}
+data(lyrics, package="billboard")
+data(wiki_hot_100s,  package="billboard")
+
+lyrics_only <- lyrics %>%
+  select(lyrics)
+
+ranked_data <- wiki_hot_100s %>%
+  cbind(lyrics_only)
+
+url_2017 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2017"
+url_2018 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2018"
+
+top_100_2017 <- url_2017 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
+  html_table()
+top_100_2017 <- top_100_2017[[1]]
+
+top_100_2018 <- url_2018 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
+  html_table()
+top_100_2018 <- top_100_2018[[1]]
+
+top_100_2017['Year'] <- 2017
+top_100_2018['Year'] <- 2018
+
+colnames(top_100_2017) <- c("no", "title", "artist", "year")
+colnames(top_100_2018) <- c("no", "title", "artist", "year")
+
+top_100_2017[] <- lapply(top_100_2017, gsub, pattern='"', replacement='')
+top_100_2018[] <- lapply(top_100_2018, gsub, pattern='"', replacement='')
+
+top_100_2017$lyrics <- NA
+top_100_2018$lyrics <- NA
+
+new_df  <- rbind(top_100_2017, top_100_2018)
+
+df_all_no_lyrics <- rbind(ranked_data, new_df)
+```
+
+```{r}
+na_lyrics <- df_all %>%
+  filter(is.na(df_all$lyrics))
+```
+
+```{r}
+datalist <- list()
+
+for (row in 1:nrow(na_lyrics)) {
+  print(row)
+  x <- possible_lyrics(artist = str_remove_all(na_lyrics[3]$artist[row], '"'), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+  if (grepl("featuring", test[3]$artist[row])) {
+    z <- gsub("featuring.*","",test[3]$artist[row])
+    x <- possible_lyrics(artist = substr(z, 1, nchar(z)-1), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+    if (length(x) == 0) {
+      datalist[[row]] <- NA
+    }else {
+      datalist[[row]] <- x %>%
+          summarise(lyrics = paste(lyric, collapse=", "))
+    }
+  }else if (length(x) != 0){
+    datalist[[row]] <- x %>%
+        summarise(lyrics = paste(lyric, collapse=", "))
+  }else {
+    datalist[[row]] <- NA
+  }
+}
+
+lyrics_data = do.call(rbind, datalist)
+
+na_lyrics$lyrics <- lyrics_data
+```
+
+```{r}
+lyrics_added <- rbind(df_all, na_lyrics)
+```
+
+
+
+
+CHUNKS FOR TESTING
+```{r}
+datalist_2017 = list()
+
+for (row in 1:nrow(top_100_2017)) {
+  print(row)
+  x <- possible_lyrics(artist = str_remove_all(top_100_2017[3]$artist[row], '"'), song = str_remove_all(top_100_2017[2]$title[row], '"'), info = "simple")
+  if (grepl("featuring", top_100_2017[3]$artist[row])) {
+    z <- gsub("featuring.*","",top_100_2017[3]$artist[row])
+    x <- possible_lyrics(artist = substr(z, 1, nchar(z)-1), song = str_remove_all(top_100_2017[2]$title[row], '"'), info = "simple")
+    if (length(x) == 0) {
+      datalist_2017[[row]] <- NA
+    }else {
+      datalist_2017[[row]] <- x %>%
+          summarise(lyrics = paste(lyric, collapse=", "))
+    }
+  }else if (length(x) != 0){
+    datalist_2017[[row]] <- x %>%
+        summarise(lyrics = paste(lyric, collapse=", "))
+  }else {
+    datalist_2017[[row]] <- NA
+  }
+}
+
+lyrics_data_2017 = do.call(rbind, datalist_2017)
+
+top_100_2017$lyrics <- lyrics_data_2017
+```
+
+```{ # r}
+x <- possible_lyrics(artist = "ASAP Ferg", song = "Plain Jane" , info = "simple")
+grepl("+", "Dan + Shay")
+
+x <- gsub(" ", "", "Dan + Shay")
+gsub("", "-", x)
+substr(z, 1, nchar(z)-1) 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
