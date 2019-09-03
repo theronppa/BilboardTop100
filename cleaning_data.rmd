@@ -10,6 +10,29 @@ pacman::p_load()
 ```
 # Cleaning the Data using REGEX etc
 
-```{r}
+Some pre processing cleaning
+Adding the stopwords for term frequence - to detect filthy data
 
+```{r}
+all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_smart$en,"the",'" The"',"told", "and.")
+all_stops <- data.frame(all_stops)
+colnames(all_stops) <- "word"
+```
+Doing term frequency on the lyrics column and unnesting the words to find the most common terms and dirty data.
+```{r eval=FALSE}
+Terms <- ranked_data %>%
+  unnest_tokens(word,lyrics) %>%
+  anti_join(all_stops, by = 'word')%>%
+  count(word, sort = TRUE)%>%
+  mutate(len=nchar(word))
+
+```
+
+Cleaning some of the data
+```{r}
+ranked_data <- as.data.table(ranked_data)
+ranked_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", ranked_data$lyrics)
+
+ranked_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
+ranked_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", ranked_data$lyrics)
 ```
