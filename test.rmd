@@ -138,6 +138,27 @@ genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[5]$genres[1]
 featuring_artists_extra <- new_graph%>%
   ffilter(str_detect(artist," (featuring.*[a-z]+,)(.* and) (.*)"))
   
+all_data <- readRDS("data_in/all_data.rds")
+
+awe <- all_data %>%
+  select(artist, title) %>%
+  as_tbl_graph() %>%
+  activate(nodes) %>%
+  convert(to_undirected) %>%
+  mutate(comm = group_louvain(),
+         degree_cent = centrality_degree(mode = "all"),
+         degree_in = centrality_degree(mode = "in"),
+         degree_out = centrality_degree(mode = "out"),
+         eigen = centrality_eigen()) %>%
+  convert(to_directed) %>%
+  rename("artist" = name) %>%
+  as.data.frame()
+# 
+final <- all_data %>%
+  left_join(awe, by = "artist")
+
+comms <- final %>%
+  group_by(comm)
 ```
 
 
