@@ -98,19 +98,22 @@ saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
 GENRE
 ```{r}
 artist_genre <- list()
-for (row in 1:nrow(lyrics_added)) {
+for (row in 1:nrow(top_100_2017)) {
   print(row)
-  if (grepl("featuring", lyrics_added[[3]][row])) {
+  if (row == 4627 | row == 4626 | row == 4628) {
+    next
+  }
+  if (grepl("featuring", top_100_2017[[3]][row])) {
     
-    z <- gsub("featuring.*","",lyrics_added[[3]][row])
-    genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[[5]][1]
+    z <- gsub("featuring.*","",top_100_2017[[3]][row])
+    genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[5]$genres[1]
     
     if (is.null(genre)) {
-      if (grepl("and", lyrics_added[[3]][row])) {
+      if (grepl("and", top_100_2017[[3]][row])) {
         
-        x <- gsub(" and.*","",lyrics_added[[3]][row])
+        x <- gsub(" and.*","",top_100_2017[[3]][row])
         x[] <- lapply(x, gsub, pattern='"', replacement='')
-        genre <- searchArtist(x[[1]], token = my_oauth)[[5]][1]
+        genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
         
         if (is.null(genre)) {
           artist_genre[[row]] <- NA
@@ -125,11 +128,11 @@ for (row in 1:nrow(lyrics_added)) {
       artist_genre[[row]] <- sub("\\,.*", "", genre)
     }
     
-  }else if (grepl("and", lyrics_added[[3]][row])) {
+  }else if (grepl("and", top_100_2017[[3]][row])) {
     
-    x <- gsub(" and.*","",lyrics_added[[3]][row])
+    x <- gsub(" and.*","",top_100_2017[[3]][row])
     x[] <- lapply(x, gsub, pattern='"', replacement='')
-    genre <- searchArtist(x[[1]], token = my_oauth)[[5]][1]
+    genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
     if (is.null(genre)) {
       artist_genre[[row]] <- NA
     }else {
@@ -138,7 +141,7 @@ for (row in 1:nrow(lyrics_added)) {
     
   }else {
     
-    genre <- searchArtist(lyrics_added[[3]][row],token = my_oauth)[[5]][1]
+    genre <- searchArtist(top_100_2017[[3]][row],token = my_oauth)[5]$genres[1]
     if (is.null(genre)) {
       artist_genre[[row]] <- NA
     }else {
@@ -149,6 +152,7 @@ for (row in 1:nrow(lyrics_added)) {
 }
 genre_data <- do.call(rbind, artist_genre)
 data_with_genre <- cbind(lyrics_added, genre_data) # 4627
+
 ```
 
 ```{r}
