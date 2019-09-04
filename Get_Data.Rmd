@@ -92,7 +92,8 @@ na_lyrics$lyrics <- lyrics_data
 
 ```{r}
 lyrics_added <- rbind(lyric_no_NA, na_lyrics)
-saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
+# saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
+all_data_lyrics <- readRDS("data_in/all_data_lyrics.rds")
 ```
 
 GENRE
@@ -152,28 +153,54 @@ for (row in 1:nrow(top_100_2017)) {
 }
 genre_data <- do.call(rbind, artist_genre)
 data_with_genre <- cbind(lyrics_added, genre_data) # 4627
+# saveRDS(data_with_genre, 'all_data_genre_not_generalised.rds')
+```
+
+```{r}
+all_data_genre_ungen <- readRDS("all_data_genre_not_generalised.rds")
+```
+
+```{# r}
+k <- all_data_genre_ungen %>%
+  distinct(genre_data)
+
+`%notin%` <- Negate(`%in%`)
+
+d <- k %>% filter(genre_data %notin% all)
 
 ```
 
 ```{r}
-pop <- c('dance pop', 'pop', 'pop christmas', 'post-teen pop', 'new wave pop', 'brill building pop', 'bubblegum pop', 'canadian pop', 'boy band', 'europop', 'viral pop', 'synthpop', 'pop punk', 'canadian hip hop')
-rap <- c('pop rap', 'rap', 'southern hip hop', 'hip hop', 'trap music', 'dirty south rap', 'gangster rap', 'east coast hip hop', 'hardcore hip hop', 'hip pop', 'hip house', 'rap metal', 'dwn trap', 'emo rap')
-rock <- c('mellow gold', 'soft rock', 'rock', 'album rock', 'pop rock', 'classic rock', 'folk rock', 'hard rock', 'dance rock', 'roots rock', 'southern rock', 'blues-rock', 'alternative rock', 'funk rock', 'psychedelic rock', 'rock-and-roll', 'modern rock', 'art rock', 'classic funk rock', 'adult standards', 'rockabilly', 'merseybeat')
-electronic <- c('tropical house', 'edm', 'brostep')
-r_and_b <- c('r&b', 'urban contemporary', 'deep pop r&b', 'indie r&b')
-soul  <- c('motown', 'disco', 'soul', 'funk', 'neo soul', 'soul christmas', 'new jack swing', 'memphis soul', 'chicago soul', 'southern soul', 'soul blues', 'post-disco', 'quiet storm', 'jazz blues', 'jazz funk', 'electric blues', 'latin')
-country <- c('country',' contemporary country', 'country christmas', 'country road', 'modern country rock', 'country rock', 'traditional country', 'folk christmas', 'folk', 'folk-pop', 'nashville sound', 'country dawn', 'traditional folk', 'outlaw country')
-df_all <- data_with_genre
-df_all$genre <- ifelse(grepl(paste(pop, collapse = "|"), asd$genre_data_2017), "pop",
-             ifelse(grepl(paste(rap, collapse = "|"), asd$genre_data_2017), "rap",
-             ifelse(grepl(paste(rock, collapse = "|"), asd$genre_data_2017), "rock",
-             ifelse(grepl(paste(electronic, collapse = "|"), asd$genre_data_2017), "electronic",
-             ifelse(grepl(paste(r_and_b, collapse = "|"), asd$genre_data_2017), "r&b",
-             ifelse(grepl(paste(soul, collapse = "|"), asd$genre_data_2017), "soul",
-             ifelse(grepl(paste(country, collapse = "|"), asd$genre_data_2017), "country", "none")))))))
-df_all$genre_data_2017 <- NULL
+pop <- c('dance pop', 'pop', 'pop christmas', 'post-teen pop', 'new wave pop', 'brill building pop', 'bubblegum pop', 'canadian pop', 'boy band', 'europop', 'viral pop', 'synthpop', 'pop punk', 'canadian hip hop', 'afropop', 'classic girl group', 'girl group', 'australian dance', 'k-hop')
 
-saveRDS(df_all, file = "data_in/all_data_lyrics_genre.rds")
+rap <- c('pop rap', 'rap', 'southern hip hop', 'hip hop', 'trap music', 'dirty south rap', 'gangster rap', 'east coast hip hop', 'hardcore hip hop', 'hip pop', 'hip house', 'rap metal', 'dwn trap', 'emo rap')
+
+rock <- c('mellow gold', 'soft rock', 'rock', 'album rock', 'pop rock', 'classic rock', 'folk rock', 'hard rock', 'dance rock', 'roots rock', 'southern rock', 'blues-rock', 'alternative rock', 'funk rock', 'psychedelic rock', 'rock-and-roll', 'modern rock', 'art rock', 'classic funk rock', 'adult standards', 'rockabilly', 'merseybeat', 'surf music', 'deep adult standards', 'rhythm and blues', 'louisiana blues', 'blues', 'melodic metalcore', 'glam metal', 'alternative metal', 'comic metal', 'nu metal')
+
+electronic <- c('tropical house', 'edm', 'brostep', 'bmore', 'broken beat', 'dark trap', 'deep groove house', 'retro electro', 'drum and bass', 'italian techno', 'electronic', 'dubstep', 'finnish electro', 'complextro', 'house', 'cyberpunk', 'electro')
+
+r_and_b <- c('r&b', 'urban contemporary', 'deep pop r&b', 'indie r&b', 'doo-wop', 'modern reggae', 'easy listening', 'reggae', 'uk reggae')
+
+soul  <- c('motown', 'disco', 'soul', 'funk', 'neo soul', 'soul christmas', 'new jack swing', 'memphis soul', 'chicago soul', 'southern soul', 'soul blues', 'post-disco', 'quiet storm', 'jazz blues', 'jazz funk', 'electric blues', 'latin', 'christian relaxative', 'memphis soul', 'classic soul', 'indie jazz', 'bebop', 'dixieland', 'avant-garde jazz', 'jazz trumpet', 'smooth jazz', 'classical')
+
+country <- c('country',' contemporary country', 'country christmas', 'country road', 'modern country rock', 'country rock', 'traditional country', 'folk christmas', 'folk', 'folk-pop', 'nashville sound', 'country dawn', 'traditional folk', 'outlaw country', 'country gospel','arkansas country', 'american folk revival', 'alabama indie', 'london indie', 'alaska indie')
+
+other <- c('beach music', 'background music', 'rif', 'disney', 'chillwave', 'comic', 'british invasion', 'compositional ambient', 'canadian celtic')
+
+all_data <- all_data_genre_ungen
+
+all_data$genre <- ifelse(grepl(paste(pop, collapse = "|"), all_data$genre_data), "pop",
+             ifelse(grepl(paste(rap, collapse = "|"), all_data$genre_data), "rap",
+             ifelse(grepl(paste(rock, collapse = "|"), all_data$genre_data), "rock",
+             ifelse(grepl(paste(electronic, collapse = "|"), all_data$genre_data), "electronic",
+             ifelse(grepl(paste(r_and_b, collapse = "|"), all_data$genre_data), "r&b",
+             ifelse(grepl(paste(soul, collapse = "|"), all_data$genre_data), "soul",
+             ifelse(grepl(paste(other, collapse = "|"), all_data$genre_data), "other",      
+             ifelse(grepl(paste(country, collapse = "|"), all_data$genre_data), "country", "other"))))))))
+all_data$genre_data <- NULL
+
+
+# saveRDS(all_data, file = "data_in/all_data.rds")
 ```
 
 
