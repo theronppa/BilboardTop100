@@ -5,8 +5,6 @@ date: "02/09/2019"
 output: html_document
 ---
 
-<<<<<<< HEAD
-
 ## Packages
 ```{r}
 pacman::p_load(billboard, rvest, genius, tidyverse, Rspotify)
@@ -20,31 +18,41 @@ my_oauth <- spotifyOAuth(app_id="top 100",client_id="75bef91a403c4b17aa946057d97
 ## Get Data and merge with current
 ```{r}
 data(lyrics, package="billboard")
-data(wiki_hot_100s,  package="billboard")
+data(wiki_hot_100s,  package="billboard") 
+
 lyrics_only <- lyrics %>%
   select(lyrics)
+
 ranked_data <- wiki_hot_100s %>%
   cbind(lyrics_only)
+
 url_2017 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2017"
 url_2018 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2018"
+
 top_100_2017 <- url_2017 %>%
   read_html() %>%
   html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
   html_table()
 top_100_2017 <- top_100_2017[[1]]
+
 top_100_2018 <- url_2018 %>%
   read_html() %>%
   html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
   html_table()
 top_100_2018 <- top_100_2018[[1]]
+
 top_100_2017['Year'] <- 2017
 top_100_2018['Year'] <- 2018
+
 colnames(top_100_2017) <- c("no", "title", "artist", "year")
 colnames(top_100_2018) <- c("no", "title", "artist", "year")
+
 top_100_2017[] <- lapply(top_100_2017, gsub, pattern='"', replacement='')
 top_100_2018[] <- lapply(top_100_2018, gsub, pattern='"', replacement='')
+
 top_100_2017$lyrics <- NA
 top_100_2018$lyrics <- NA
+
 new_df  <- rbind(top_100_2017, top_100_2018)
 df_all_no_lyrics <- rbind(ranked_data, new_df)
 ```
@@ -84,6 +92,7 @@ na_lyrics$lyrics <- lyrics_data
 
 ```{r}
 lyrics_added <- rbind(lyric_no_NA, na_lyrics)
+saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
 ```
 
 GENRE
@@ -91,17 +100,17 @@ GENRE
 artist_genre <- list()
 for (row in 1:nrow(lyrics_added)) {
   print(row)
-  if (grepl("featuring", lyrics_added[3]$artist[row])) {
+  if (grepl("featuring", lyrics_added[[3]][row])) {
     
-    z <- gsub("featuring.*","",lyrics_added[3]$artist[row])
-    genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)$genres[1]
+    z <- gsub("featuring.*","",lyrics_added[[3]][row])
+    genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[[5]][1]
     
     if (is.null(genre)) {
-      if (grepl("and", lyrics_added[3]$artist[row])) {
+      if (grepl("and", lyrics_added[[3]][row])) {
         
-        x <- gsub(" and.*","",lyrics_added[3]$artist[row])
+        x <- gsub(" and.*","",lyrics_added[[3]][row])
         x[] <- lapply(x, gsub, pattern='"', replacement='')
-        genre <- searchArtist(x[[1]], token = my_oauth)$genres[1]
+        genre <- searchArtist(x[[1]], token = my_oauth)[[5]][1]
         
         if (is.null(genre)) {
           artist_genre[[row]] <- NA
@@ -116,11 +125,11 @@ for (row in 1:nrow(lyrics_added)) {
       artist_genre[[row]] <- sub("\\,.*", "", genre)
     }
     
-  }else if (grepl("and", lyrics_added[3]$artist[row])) {
+  }else if (grepl("and", lyrics_added[[3]][row])) {
     
-    x <- gsub(" and.*","",lyrics_added[3]$artist[row])
+    x <- gsub(" and.*","",lyrics_added[[3]][row])
     x[] <- lapply(x, gsub, pattern='"', replacement='')
-    genre <- searchArtist(x[[1]], token = my_oauth)$genres[1]
+    genre <- searchArtist(x[[1]], token = my_oauth)[[5]][1]
     if (is.null(genre)) {
       artist_genre[[row]] <- NA
     }else {
@@ -129,7 +138,7 @@ for (row in 1:nrow(lyrics_added)) {
     
   }else {
     
-    genre <- searchArtist(lyrics_added[3]$artist[row],token = my_oauth)$genres[1]
+    genre <- searchArtist(lyrics_added[[3]][row],token = my_oauth)[[5]][1]
     if (is.null(genre)) {
       artist_genre[[row]] <- NA
     }else {
@@ -139,7 +148,7 @@ for (row in 1:nrow(lyrics_added)) {
   }
 }
 genre_data <- do.call(rbind, artist_genre)
-data_with_genre <- cbind(lyrics_added, genre_data)
+data_with_genre <- cbind(lyrics_added, genre_data) # 4627
 ```
 
 ```{r}
@@ -150,15 +159,17 @@ electronic <- c('tropical house', 'edm', 'brostep')
 r_and_b <- c('r&b', 'urban contemporary', 'deep pop r&b', 'indie r&b')
 soul  <- c('motown', 'disco', 'soul', 'funk', 'neo soul', 'soul christmas', 'new jack swing', 'memphis soul', 'chicago soul', 'southern soul', 'soul blues', 'post-disco', 'quiet storm', 'jazz blues', 'jazz funk', 'electric blues', 'latin')
 country <- c('country',' contemporary country', 'country christmas', 'country road', 'modern country rock', 'country rock', 'traditional country', 'folk christmas', 'folk', 'folk-pop', 'nashville sound', 'country dawn', 'traditional folk', 'outlaw country')
-asd <- data_with_genre
-asd$genre <- ifelse(grepl(paste(pop, collapse = "|"), asd$genre_data_2017), "pop",
+df_all <- data_with_genre
+df_all$genre <- ifelse(grepl(paste(pop, collapse = "|"), asd$genre_data_2017), "pop",
              ifelse(grepl(paste(rap, collapse = "|"), asd$genre_data_2017), "rap",
              ifelse(grepl(paste(rock, collapse = "|"), asd$genre_data_2017), "rock",
              ifelse(grepl(paste(electronic, collapse = "|"), asd$genre_data_2017), "electronic",
              ifelse(grepl(paste(r_and_b, collapse = "|"), asd$genre_data_2017), "r&b",
              ifelse(grepl(paste(soul, collapse = "|"), asd$genre_data_2017), "soul",
              ifelse(grepl(paste(country, collapse = "|"), asd$genre_data_2017), "country", "none")))))))
-asd$genre_data_2017 <- NULL
+df_all$genre_data_2017 <- NULL
+
+saveRDS(df_all, file = "data_in/all_data_lyrics_genre.rds")
 ```
 
 
@@ -195,35 +206,3 @@ lyrics_data_2017 = do.call(rbind, datalist_2017)
 genre_data_2017 = do.call(rbind, awe)
 top_100_2017$lyrics <- lyrics_data_2017
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
-```{r setup, include=FALSE}
-pacman::p_load()
-```
-
-# Pulling and scraping data
->>>>>>> b722e324ac7a50ed58899f5d6d2edd7429b21464
