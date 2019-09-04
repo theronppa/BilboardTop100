@@ -1,0 +1,475 @@
+---
+title: "Billboard_top_100"
+author: "Paul, Marrete, Sally, Christiaan and Heinrich"
+date: "9/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Packages
+```{r}
+pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr)
+```
+
+Get Data
+## Get Data and merge with current
+```{# r}
+data(lyrics, package="billboard")
+data(wiki_hot_100s,  package="billboard") 
+
+lyrics_only <- lyrics %>%
+  select(lyrics)
+
+ranked_data <- wiki_hot_100s %>%
+  cbind(lyrics_only)
+
+url_2017 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2017"
+url_2018 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2018"
+
+top_100_2017 <- url_2017 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
+  html_table()
+top_100_2017 <- top_100_2017[[1]]
+
+top_100_2018 <- url_2018 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
+  html_table()
+top_100_2018 <- top_100_2018[[1]]
+
+top_100_2017['Year'] <- 2017
+top_100_2018['Year'] <- 2018
+
+colnames(top_100_2017) <- c("no", "title", "artist", "year")
+colnames(top_100_2018) <- c("no", "title", "artist", "year")
+
+top_100_2017[] <- lapply(top_100_2017, gsub, pattern='"', replacement='')
+top_100_2018[] <- lapply(top_100_2018, gsub, pattern='"', replacement='')
+
+top_100_2017$lyrics <- NA
+top_100_2018$lyrics <- NA
+
+new_df  <- rbind(top_100_2017, top_100_2018)
+df_all_no_lyrics <- rbind(ranked_data, new_df)
+```
+
+```{# r}
+na_lyrics <- df_all_no_lyrics %>%
+  filter(is.na(df_all_no_lyrics$lyrics))
+lyric_no_NA <- na.omit(df_all_no_lyrics)
+```
+
+## Add lyrics to NA
+```{# r}
+datalist <- list()
+for (row in 1:nrow(na_lyrics)) {
+  print(row)
+  x <- possible_lyrics(artist = str_remove_all(na_lyrics[3]$artist[row], '"'), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+  if (grepl("featuring", na_lyrics[3]$artist[row])) {
+    z <- gsub("featuring.*","",na_lyrics[3]$artist[row])
+    x <- possible_lyrics(artist = substr(z, 1, nchar(z)-1), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+    if (length(x) == 0) {
+      datalist[[row]] <- NA
+    }else {
+      datalist[[row]] <- x %>%
+          summarise(lyrics = paste(lyric, collapse=", "))
+    }
+  }else if (length(x) != 0){
+    datalist[[row]] <- x %>%
+        summarise(lyrics = paste(lyric, collapse=", "))
+  }else {
+    datalist[[row]] <- NA
+  }
+}
+lyrics_data = do.call(rbind, datalist)
+na_lyrics$lyrics <- lyrics_data
+```
+
+```{# r}
+lyrics_added <- rbind(lyric_no_NA, na_lyrics)
+# saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
+# all_data_lyrics <- readRDS("data_in/all_data_lyrics.rds")
+```
+
+## Add lyrics to NA
+```{# r}
+datalist <- list()
+for (row in 1:nrow(na_lyrics)) {
+  print(row)
+  x <- possible_lyrics(artist = str_remove_all(na_lyrics[3]$artist[row], '"'), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+  if (grepl("featuring", na_lyrics[3]$artist[row])) {
+    z <- gsub("featuring.*","",na_lyrics[3]$artist[row])
+    x <- possible_lyrics(artist = substr(z, 1, nchar(z)-1), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+    if (length(x) == 0) {
+      datalist[[row]] <- NA
+    }else {
+      datalist[[row]] <- x %>%
+          summarise(lyrics = paste(lyric, collapse=", "))
+    }
+  }else if (length(x) != 0){
+    datalist[[row]] <- x %>%
+        summarise(lyrics = paste(lyric, collapse=", "))
+  }else {
+    datalist[[row]] <- NA
+  }
+}
+lyrics_data = do.call(rbind, datalist)
+na_lyrics$lyrics <- lyrics_data
+```
+
+```{# r}
+lyrics_added <- rbind(lyric_no_NA, na_lyrics)
+# saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
+all_data_lyrics <- readRDS("data_in/all_data_lyrics.rds")
+```
+
+GENRE
+```{# r}
+artist_genre <- list()
+for (row in 1:nrow(top_100_2017)) {
+  print(row)
+  if (row == 4627 | row == 4626 | row == 4628) {
+    next
+  }
+  if (grepl("featuring", top_100_2017[[3]][row])) {
+    
+    z <- gsub("featuring.*","",top_100_2017[[3]][row])
+    genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[5]$genres[1]
+    
+    if (is.null(genre)) {
+      if (grepl("and", top_100_2017[[3]][row])) {
+        
+        x <- gsub(" and.*","",top_100_2017[[3]][row])
+        x[] <- lapply(x, gsub, pattern='"', replacement='')
+        genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
+        
+        if (is.null(genre)) {
+          artist_genre[[row]] <- NA
+        }else {
+          artist_genre[[row]] <- sub("\\,.*", "", genre)
+        }
+        
+      }else{
+        artist_genre[[row]] <- NA
+      }
+    }else {
+      artist_genre[[row]] <- sub("\\,.*", "", genre)
+    }
+    
+  }else if (grepl("and", top_100_2017[[3]][row])) {
+    
+    x <- gsub(" and.*","",top_100_2017[[3]][row])
+    x[] <- lapply(x, gsub, pattern='"', replacement='')
+    genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
+    if (is.null(genre)) {
+      artist_genre[[row]] <- NA
+    }else {
+      artist_genre[[row]] <- sub("\\,.*", "", genre)
+    }
+    
+  }else {
+    
+    genre <- searchArtist(top_100_2017[[3]][row],token = my_oauth)[5]$genres[1]
+    if (is.null(genre)) {
+      artist_genre[[row]] <- NA
+    }else {
+      artist_genre[[row]] <- sub("\\,.*", "", genre)
+    } 
+    
+  }
+}
+genre_data <- do.call(rbind, artist_genre)
+data_with_genre <- cbind(lyrics_added, genre_data) # 4627
+# saveRDS(data_with_genre, 'all_data_genre_not_generalised.rds')
+```
+
+```{# r}
+all_data_genre_ungen <- readRDS("all_data_genre_not_generalised.rds")
+```
+
+```{# r}
+k <- all_data_genre_ungen %>%
+  distinct(genre_data)
+
+`%notin%` <- Negate(`%in%`)
+
+d <- k %>% filter(genre_data %notin% all)
+
+```
+
+```{# r}
+pop <- c('dance pop', 'pop', 'pop christmas', 'post-teen pop', 'new wave pop', 'brill building pop', 'bubblegum pop', 'canadian pop', 'boy band', 'europop', 'viral pop', 'synthpop', 'pop punk', 'canadian hip hop', 'afropop', 'classic girl group', 'girl group', 'australian dance', 'k-hop')
+
+rap <- c('pop rap', 'rap', 'southern hip hop', 'hip hop', 'trap music', 'dirty south rap', 'gangster rap', 'east coast hip hop', 'hardcore hip hop', 'hip pop', 'hip house', 'rap metal', 'dwn trap', 'emo rap')
+
+rock <- c('mellow gold', 'soft rock', 'rock', 'album rock', 'pop rock', 'classic rock', 'folk rock', 'hard rock', 'dance rock', 'roots rock', 'southern rock', 'blues-rock', 'alternative rock', 'funk rock', 'psychedelic rock', 'rock-and-roll', 'modern rock', 'art rock', 'classic funk rock', 'adult standards', 'rockabilly', 'merseybeat', 'surf music', 'deep adult standards', 'rhythm and blues', 'louisiana blues', 'blues', 'melodic metalcore', 'glam metal', 'alternative metal', 'comic metal', 'nu metal')
+
+electronic <- c('tropical house', 'edm', 'brostep', 'bmore', 'broken beat', 'dark trap', 'deep groove house', 'retro electro', 'drum and bass', 'italian techno', 'electronic', 'dubstep', 'finnish electro', 'complextro', 'house', 'cyberpunk', 'electro')
+
+r_and_b <- c('r&b', 'urban contemporary', 'deep pop r&b', 'indie r&b', 'doo-wop', 'modern reggae', 'easy listening', 'reggae', 'uk reggae')
+
+soul  <- c('motown', 'disco', 'soul', 'funk', 'neo soul', 'soul christmas', 'new jack swing', 'memphis soul', 'chicago soul', 'southern soul', 'soul blues', 'post-disco', 'quiet storm', 'jazz blues', 'jazz funk', 'electric blues', 'latin', 'christian relaxative', 'memphis soul', 'classic soul', 'indie jazz', 'bebop', 'dixieland', 'avant-garde jazz', 'jazz trumpet', 'smooth jazz', 'classical')
+
+country <- c('country',' contemporary country', 'country christmas', 'country road', 'modern country rock', 'country rock', 'traditional country', 'folk christmas', 'folk', 'folk-pop', 'nashville sound', 'country dawn', 'traditional folk', 'outlaw country', 'country gospel','arkansas country', 'american folk revival', 'alabama indie', 'london indie', 'alaska indie')
+
+other <- c('beach music', 'background music', 'rif', 'disney', 'chillwave', 'comic', 'british invasion', 'compositional ambient', 'canadian celtic')
+
+all_data <- all_data_genre_ungen
+
+all_data$genre <- ifelse(grepl(paste(pop, collapse = "|"), all_data$genre_data), "pop",
+             ifelse(grepl(paste(rap, collapse = "|"), all_data$genre_data), "rap",
+             ifelse(grepl(paste(rock, collapse = "|"), all_data$genre_data), "rock",
+             ifelse(grepl(paste(electronic, collapse = "|"), all_data$genre_data), "electronic",
+             ifelse(grepl(paste(r_and_b, collapse = "|"), all_data$genre_data), "r&b",
+             ifelse(grepl(paste(soul, collapse = "|"), all_data$genre_data), "soul",
+             ifelse(grepl(paste(other, collapse = "|"), all_data$genre_data), "other",      
+             ifelse(grepl(paste(country, collapse = "|"), all_data$genre_data), "country", "other"))))))))
+all_data$genre_data <- NULL
+
+
+#   saveRDS(all_data, file = "data_in/all_data.rds")
+```
+
+Call Data
+```{#r}
+all_data <- readRDS("data_in/all_data.rds")
+```
+
+Temp Get Data
+```{r get_data}
+data(lyrics, package = 'billboard')
+data(wiki_hot_100s, package = 'billboard')
+data(spotify_track_data, package = 'billboard')
+
+lyrics
+as_tbl_graph(lyrics)
+wiki_hot_100s
+
+lyrics_only <- lyrics%>%
+  select(lyrics)
+
+lyrics_tidy <- as_tbl_graph(lyrics)
+
+ranked_data <- wiki_hot_100s%>%
+  cbind(lyrics_only)
+
+ranked_data <- mutate(ranked_data, id = rownames(ranked_data))
+```
+
+Some pre processing cleaning
+Adding the stopwords for term frequence - to detect filthy data.
+Don't take it out need stopwords for the WordCloud - run manually when needed.
+```{r eval = False}
+all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_smart$en,"the",'" The"',"told", "and.")
+all_stops <- data.frame(all_stops)
+colnames(all_stops) <- "word"
+```
+Doing term frequency on the lyrics column and unnesting the words to find the most common terms and dirty data.
+```{r eval=FALSE}
+Terms <- ranked_data %>%
+  unnest_tokens(word,lyrics) %>%
+  anti_join(all_stops, by = 'word')%>%
+  count(word, sort = TRUE)%>%
+  mutate(len=nchar(word))
+
+```
+
+Cleaning some of the data
+```{r eval = FALSE}
+ranked_data <- as.data.table(ranked_data)
+ranked_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", ranked_data$lyrics)
+
+ranked_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
+ranked_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", ranked_data$lyrics)
+```
+
+
+Create a word Cloud
+```{r}
+
+corpus <- Corpus(VectorSource(ranked_data$lyrics))
+dtm <- TermDocumentMatrix(corpus)
+
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+d <- d%>%
+  anti_join(stop_words, by = "word")
+head(d, 10)
+
+#Word cloud on artists instead
+
+
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+Which artist is featured the most? Top 20 from 1960 to 2018
+```{r}
+most_frequent <- ranked_data %>%
+  group_by(artist) %>%
+  tally() %>% 
+  select(artist, n) %>%
+  arrange(desc(n)) %>%
+  head(20)
+
+# Draw plot
+ggplot(most_frequent, aes(x=reorder(artist, n), y=n)) + 
+  geom_bar(stat="identity", width=.5, fill="tomato3") + 
+  labs(title="Top 20 Most Featured Artist", 
+       subtitle="Artist and # times featured in top 100") + 
+  theme(axis.text.x = element_text(vjust=0.6)) +
+  coord_flip() +
+  ylab("Number of features") +
+  xlab("Artist") +
+  geom_label(aes(label=n), label.padding = unit(0.080, "lines"))+
+  theme_minimal()
+  
+
+```
+ 
+## This tracks the years that had the most danceable years, taking music from the billboard top 100. 
+## By plotting a regression line, it shows that the late 1970's and 1980 hits the peak of the most danceable music era. Danceability then shows to decline into 2015, and predicts to continue in this direction. 
+```{r}
+
+toptrack <- spotify_track_data %>%
+  group_by(year) %>%
+  summarise(danceability = n())
+
+toptrack$year <- as.numeric(as.character(toptrack$year))
+
+ggplot(toptrack, aes(x= year,y= danceability)) + 
+  geom_point() + 
+  stat_smooth(method = "lm",
+              formula = y ~ x + poly(x, 2) - 1) + 
+  labs(x = "Year", y = "Danceability")
+
+```
+
+
+## Taking Daceability into consideration, we can then look at particularly the most danceable songs, and the least danceable songs. 
+```{r Dataset, message=FALSE, warning=FALSE}
+# Load the enron dataset
+dance <- toptrack %>%
+  select(year, danceability) %>%
+  group_by(year) %>%
+  as_tbl_graph() %>%
+  activate(nodes) %>%
+  mutate(
+    deg = centrality_degree()
+  )
+plot(dance)
+```
+
+
+##Taking Danceability into consideration, we can then look at the specific songs, instead of years that are the most danceable. Comparing these songs to Tempo, one can undestand the mean Tempo that makes a song Danceable.
+
+##By looking at the Graph, the most danceable songs have an average Tempo of 116 beats per minute. 
+
+```{r}
+top_dancing_songs <- spotify_track_data %>%
+  arrange(desc(danceability)) %>%
+  head(10)
+
+pc1 <- ggplot(top_dancing_songs, aes(x = track_name, y = tempo, color = artist_name))
+pc1 + geom_point() +
+  geom_line()+
+  geom_hline(aes(yintercept = mean(tempo))) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+pc2 <- pc1 +
+  geom_smooth(mapping = aes(linetype = "r2"),
+              method = "lm",
+              formula = y ~ x + log(x), se = FALSE,
+              color = "red")
+
+pc2 + geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+##Looking at the least danceable songs, one may think that the beats per minute might have a huge differing factor, but it appears the beats per minute sit at an average over 125 beats per minute. Looking at the data without taking the mean into consideration, it appears that these songs either have a very low beats per minute count or a very high beats per minute count. The range of this graph goes from below 50 beats per minute to over 200 beats per minute. This differs from the top danceable songs, where the graph's danceablity numbers range from 100 to 120 beats per minute. The majority of the songs also float close to the mean line. This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
+```{r}
+bottom_dancing_songs <- spotify_track_data %>%
+  arrange(danceability) %>%
+  head(10)
+
+pg1 <- ggplot(bottom_dancing_songs, aes(x = track_name, y = tempo, color = artist_name))
+pg1 + geom_point() +
+  geom_line()+
+  geom_hline(aes(yintercept = mean(tempo))) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+pg2 <- pc1 +
+  geom_smooth(mapping = aes(linetype = "r2"),
+              method = "lm",
+              formula = y ~ x + log(x), se = FALSE,
+              color = "red")
+pg2 + geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Which Artist is the most popular in Genre?
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+Community Detection
+```{r}
+
+```
+
+Looking at collaborations can we detect genre communities
+```{r}
+
+```
+
+Sentiment Analysis
+```{r eval=False}
+
+ranked_data <- ranked_data%>%
+  sample_frac(0.5)
+
+sent <- sentiment_by(ranked_data$lyrics,  #does not run that long. EZ
+               polarity_dt = lexicon::hash_sentiment_jockers_rinker,
+               valence_shifters_dt = lexicon::hash_valence_shifters,
+               averaging.function = sentimentr::average_weighted_mixed_sentiment,
+               hyphen = " ",
+               amplifier.weight = 2, 
+               n.before = 3, 
+               n.after = 3,
+               question.weight = 0, 
+               adversative.weight = 0.25,
+               neutral.nonverb.like = TRUE,
+            
+)
+
+sent_tot <- ranked_data%>%
+  cbind(sent)%>%
+  select(title,artist,lyrics,year,ave_sentiment)
+
+sent_tot_tbl <- sent_tot%>%
+  select(artist,title)%>%
+  group_by(artist)%>%
+  as_tbl_graph()%>%
+  activate(nodes)
+
+plot(sent_tot$year,sent_tot$ave_sentiment)
+
+sent_neg <- sent_tot%>%
+  filter(ave_sentiment < 0)%>%
+  arrange(desc(ave_sentiment))
+
+```
+
