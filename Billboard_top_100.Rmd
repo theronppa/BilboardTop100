@@ -8,6 +8,27 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# BillboardTop100 Dataset
+
+Ever wonderded what weird and wonderful facts can be deduced from looking at our favourite tracks over the past 58 years? 
+
+The best place to look for this is the Billboard Top 100. 
+
+This Dataset boasts the Top 100 hits from 1960 to 2015. This set includes four packages within the dataset that we were able to conduct network analysis and inferences upon. 
+
+In order to gain the most recent, and most reliable results, it was important to ensure that the years 2017 and 2018 were included in the dataset. This was done by scraping the web for songs and the lyrics of the songs for 2017 and 2018 Billboard Top 100. 
+
+Since this study is aimed towards a music dataset, it was important to clean and organize the data in a way that is approppriate for making analysis' on the dataset. 
+
+One can download the "Billboard Hot 100" package, and within it find four useful datasets. 
+
+..*lyrics
+..*spotify_playlists
+..*spotify_track_data
+..*wiki_hot_100s
+
+Each of these sets provide us with useful information, regarding the different characteristics of the tracks.
+
 
 Packages
 ```{r}
