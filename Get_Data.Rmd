@@ -239,13 +239,13 @@ top_100_2017$lyrics <- lyrics_data_2017
 ```
 
 ```{r}
-test <- readRDS("data_in/all_data.rds")
+all_data <- readRDS("data_in/all_data.rds")
 
-test$lyrics <- NULL
+all_data$lyrics <- NULL
 
-split_feat <- str_split_fixed(test$artist, 'featuring', 2)
+split_feat <- str_split_fixed(all_data$artist, 'featuring', 2)
 
-split_feat_song <- cbind(test, split_feat)
+split_feat_song <- cbind(all_data, split_feat)
 
 split_feat_song$artist <- NULL
 
@@ -267,14 +267,10 @@ only_colab[, artist_2 := str_remove_all(artist_2, pattern = "^\\s"),""]
 only_colab[, artist_1 := str_remove_all(artist_1, pattern = "\\s$"),""]
 only_colab[, artist_2 := str_remove_all(artist_2, pattern = "\\s$"),""]
 
-
-
 only_colab_stay <- only_colab %>%
   filter(artist_1 == "Marky Mark and the Funky Bunch" |
          artist_1 == "Michael Franti & Spearhead" |
-         artist_1 == "Lil Jon & The East Side Boyz" |
          artist_1 == "Timbaland & Magoo" |
-         artist_2 == "Lil Jon & The East Side Boyz" |
          artist_2 == "Trina & Tamara" |
          artist_2 == "8Ball & MJG")
 
@@ -290,10 +286,18 @@ only_colab <- separate_rows(only_colab, artist_2, sep = '& ')
 only_colab <- separate_rows(only_colab, artist_1, sep = 'with ')
 
 colab_all <- rbind(only_colab, only_colab_stay)
-colab_all[618]$artist_2 <- "Tyga"
-colab_all[575]$artist_1 <- "Jay-Z"
-colab_all[731]$artist_1 <- "Ty Dolla ign"
+colab_all[620]$artist_2 <- "Tyga"
+colab_all[621]$artist_2 <- "Jay-Z"
+colab_all[577]$artist_1 <- "Jay-Z" #
+colab_all[743]$artist_1 <- "Jay-Z" #
+colab_all[745]$artist_1 <- "Jay-Z" #
+colab_all[733]$artist_1 <- "Ty Dolla Sign"
+colab_all[712]$artist_2 <- "Ty Dolla Sign"
+colab_all[251]$artist_1 <- "The East Side Boyz"
+colab_all[242]$artist_2 <- "The East Side Boyz"
+colab_all[13]$artist_2 <- "Snoop Dogg"
 
+colab_all <- colab_all[!(colab_all$artist_2 == ""), ]
 
 colab_all[, artist_1 := str_remove_all(artist_1, pattern = "^\\s"),""]
 colab_all[, artist_2 := str_remove_all(artist_2, pattern = "^\\s"),""]
@@ -301,10 +305,12 @@ colab_all[, artist_2 := str_remove_all(artist_2, pattern = "^\\s"),""]
 colab_all[, artist_1 := str_remove_all(artist_1, pattern = "\\s$"),""]
 colab_all[, artist_2 := str_remove_all(artist_2, pattern = "\\s$"),""]
 
-lol <- gather(colab_all, A_key, artist, artist_1:artist_2)
-
-f <- as.data.frame(unique(lol$artist))
+saveRDS(colab_all, "data_in/colaboration_data.rds")
 ```
+
+577	Jay Z	Justin Timberlake	rap	Holy Grail	2013	22
+743	Jay Z	French Montana	other	All the Way Up	2016	87
+745
 
 if (grepl("featuring", na_lyrics[3]$artist[row])) {
     z <- gsub("featuring.*","",na_lyrics[3]$artist[row])
