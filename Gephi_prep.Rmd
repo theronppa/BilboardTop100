@@ -1,0 +1,53 @@
+---
+title: "Collaboration_Final"
+author: "Dream team"
+date: "05/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggraph)
+library(billboard)
+library(genius)
+library(geniusr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(tibble)
+library(tidygraph)
+library(textclean)
+library(tidytext)
+library(graphlayouts)
+library(igraph)
+library(data.table)
+```
+
+Fetch All Data
+#Fetched DATA
+```{r}
+colaboration_data <- readRDS("~/Documents/GitHub/BilboardTop100/colaboration_data.rds")
+```
+
+# Converted 
+```{r}
+colaboration_data_tbl <- as_tbl_graph(colaboration_data, directed = FALSE)
+```
+
+# Community Detection
+```{r}
+colab_detect <- colaboration_data_tbl %>%
+  mutate(comm_detec = group_louvain(),
+         degree_cen = centrality_degree(mode = "all") ,
+         degree_betw = centrality_betweenness())
+
+colab_detect_igraph <- as.igraph(colab_detect)
+```
+
+LAST STEP
+```{r}
+write.graph(colab_detect_igraph, "~/Desktop/Billboard_Colab.graphml", format=c("graphml"))
+```
