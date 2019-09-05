@@ -1,0 +1,77 @@
+---
+title: "The Work Cloud"
+author: "Paul, Marrete, Sally, Christiaan and Heinrich"
+date: "9/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,RcolorBrewer,stringr,ggraph)
+```
+
+
+```{r}
+data(lyrics, package = 'billboard')
+data(wiki_hot_100s, package = 'billboard')
+data(spotify_playlists, package='billboard')
+data(spotify_track_data, package='billboard')
+
+
+
+lyrics
+as_tbl_graph(lyrics)
+wiki_hot_100s
+
+lyrics_only <- lyrics%>%
+  select(lyrics)
+
+lyrics_tidy <- as_tbl_graph(lyrics)
+
+ranked_data <- wiki_hot_100s%>%
+  cbind(lyrics_only)
+
+ranked_data <- mutate(ranked_data, id = rownames(ranked_data))
+
+```
+
+```{r}
+all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_smart$en,"the",'" The"',"told", "and.")
+all_stops <- data.frame(all_stops)
+colnames(all_stops) <- "word"
+```
+
+```{r eval=FALSE}
+Terms <- ranked_data %>%
+  unnest_tokens(word,lyrics) %>%
+  anti_join(all_stops, by = 'word')%>%
+  count(word, sort = TRUE)%>%
+  mutate(len=nchar(word))
+
+```
+
+```{r}
+swear_words <- c("fuck","shit","freak","bastard","sex","damn","ass","cock","penis","pussy","dick","lame","slut","whore","motherfucker","hell","prick","crap")
+swear_words <- as.data.frame(swear_words)
+swear_words <- swear_words%>%
+  rename("word" = swear_words)
+
+
+swear_terms <- Terms%>%
+  anti_join(stop_words, by = "word")%>%
+  right_join(swear_words, by = "word")
+```
+Create a word Cloud for swear word
+```{r}
+swear_terms <- swear_terms%>%
+  rename("freq"= n)
+
+swear_terms$len <- NULL
+
+```
+The Word Cloud of all the lyrics.
+```{r}
+set.seed(1234)
+wordcloud(words = swear_terms$word, freq = swear_terms$freq, min.freq = 1,
+          max.words=200, random.order=TRUE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
