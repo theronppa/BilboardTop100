@@ -158,7 +158,15 @@ final <- all_data %>%
   left_join(awe, by = "artist")
 
 comms <- final %>%
-  group_by(comm)
+  filter(comm == "1")
 ```
+
+```{r}
+# all_data <- as.factor(all_data$artist)
+artgen <- all_data %>%
+  select(artist, genre) %>%
+  group_by(artist)
+```
+
 
 
