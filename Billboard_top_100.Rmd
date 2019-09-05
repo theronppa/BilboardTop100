@@ -14,7 +14,18 @@ Packages
 pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr)
 ```
 
-Get Data
+# Some cleaning text
+
+Before diving into the analysis of this dataset, we need clean data. The dataset might look clean, but has inconsistencies scattered throughout. 
+
+One of the biggest challenges was seperating the artists from the featured artists. This posed an indepth cleaning regime by using regular expressions and packages from R to seperate the different artists into their own respective columns. By doing this, we can create a network of artists and their collaborators, and link their respective featured songs as edges. 
+Another challenge was collecting lyrics for songs that were not available on the original dataset - so we had to pull it from an external source via a scrapper. 
+
+As genre's are an important aspect of this analysis - we had to pull in genres from a Spotify API, and generalise them. It was identifed that there was over 800 different genres, so we decided for community and conveinence sake, to generalise them into broader groups.
+
+This provides the opportunity the gain insight into which artists tend to collaborate together and which genre is the most popular among the community of artists.
+
+*Add other inferences*
 ## Get Data and merge with current
 ```{# r}
 data(lyrics, package="billboard")
@@ -420,22 +431,25 @@ Which Artist is the most popular in Genre?
 
 ```
 
+#Community Detection
+
+After creating the big network of artists and collaborators, we can finally run community detection to determine which artists are grouped together, and if the genres correspond to these communities.
+
+It was assumed that collaborations would primarilly occur in the same genre. To show this, we had to split the artists column and extract all the featured artists that collaborate on a given song. We then ran the louvain community detection algorithm to distinguish the different artists in the defined communities. The reason why we choose the louvain method is because of it's fast processing time, responsiveness and accurarcy on bigger datasets like this one. 
+
+Using our intiution, open further investigation, it was found that certain communities have artists that collaborate with other artists that we associate with the same genre, proving our assumption. It is also important to take note that there were other bridging nodes that collaborated outside of the main cluster, as this also confirms our assumption that different communities can exist, but different artists can act as bridges for further collaboration. 
+
+See plot below: (MARETTE HIERSOOOOOOOOOOOOOOO)
+
 
 ```{r}
 
 ```
 
-Community Detection
-```{r}
+#Sentiment Analysis
 
-```
+As a interesting topic, we decided to run sentiment analysis on the lyrics provided by each song and artist, to determine if artists over the years tend to write about more negative or positive sentiments.
 
-Looking at collaborations can we detect genre communities
-```{r}
-
-```
-
-Sentiment Analysis
 ```{r eval=False}
 
 ranked_data <- ranked_data%>%
@@ -472,4 +486,9 @@ sent_neg <- sent_tot%>%
   arrange(desc(ave_sentiment))
 
 ```
+# APPENDIX
+
+In order to run the entire process of getting all the data needed to run the analysis, a spotify user token needs to be created. We won't go to into much detail here, but you can follow the guide here https://www.rcharlie.com/spotifyr/. 
+
+
 
