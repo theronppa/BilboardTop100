@@ -10,19 +10,6 @@ pacman::p_load(spotifyr, tidygraph, billboard, Rspotify, dplyr, ggplot2, igraph,
 ```
 
 ```{r}
-client_id = Sys.setenv(SPOTIFY_CLIENT_ID = 'a1ab0e500cd84b2ab336c6a4eb2b3b29')
-client_secret = Sys.setenv(SPOTIFY_CLIENT_SECRET = '471f70c3e1c74ed8b75ea23656b8481c')
-token <- get_spotify_access_token()
-
-playlist <- get_playlist('37IRJrV9jd0LnsFTIY83ax', fields = c("tracks.items.track.artists.name", "tracks.items.track.name"), authorization = token) %>%
-  as.data.frame()
-
-all_fields <- get_playlist('37IRJrV9jd0LnsFTIY83ax', fields = NULL, authorization = token)
-
-
-```
-
-```{r}
 data(lyrics, package='billboard')
 data(wiki_hot_100s, package = 'billboard')
 data(spotify_track_data, package = 'billboard')
@@ -85,59 +72,6 @@ frequent_artists %>%
     ggtitle('Frequent Artists') + 
     theme_graph()
 
-featuring_artist_feat <-str_split_fixed(new_graph$artist, "featuring", 2)
-
-featuring_artist_feat <- as.data.frame(featuring_artist_feat)
-  
-featuring_artist_comma <- str_split_fixed(featuring_artist_feat$V2,",",2)
-
-
-featuring_artist_comma <- as.data.frame(featuring_artist_comma)
-
-featuring_artist_and <- str_split_fixed(featuring_artist_comma$V2, "and",2)
-
-featuring_artist_and <- as.data.frame(featuring_artist_and)
-
-featuring_artist_feat$V2 <- NULL
-featuring_artist_and$V2 <- NULL
-featuring_artist_comma$V2 <- NULL
-
-
-
-feature_total <- cbind(featuring_artist_feat,featuring_artist_comma)%>%
-  cbind(featuring_artist_and)%>%
-  cbind(lyrics)
-
-names(feature_total)[1] <- "Artist_1"
-names(feature_total)[2] <- "Artist_2"
-names(feature_total)[3] <- "Artist_3"
-names(feature_total)[4] <- "Artist_4"
-
-feature_total$artist <- NULL
-
-feature_total_select <- feature_total%>%
-  select(Artist_1,Artist_2,Artist_3,Artist_4,title)
-
-tidyr::gather(feature_total, "artist", "n", 2:4)
-
-    
-feature_total$V2 <- NULL
-
-feature_total <- feature_total%>%
-  as_tbl_graph()%>%
-  as.igraph()
-  #str_split_fixed(featuring_artists_og$V2, "and", 2)%>%
-  #as.data.frame(featuring_artists_og)%>%
-  #cbind(new_graph,featuring_artists_og)%>%
-  #filter(V2 != "")
-
-
- find <- gsub("featuring.*","",top_100_2017[[3]][row])
-genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[5]$genres[1]
-
-featuring_artists_extra <- new_graph%>%
-  ffilter(str_detect(artist," (featuring.*[a-z]+,)(.* and) (.*)"))
-  
 all_data <- readRDS("data_in/all_data.rds")
 
 awe <- all_data %>%
@@ -162,11 +96,22 @@ comms <- final %>%
 ```
 
 ```{r}
-# all_data <- as.factor(all_data$artist)
+#all_data <- as.factor(all_data$artist)
+#as.data.frame(all_data)
+all_data$no <-as.numeric(all_data$no)
 artgen <- all_data %>%
-  select(artist, genre) %>%
-  group_by(artist)
+  filter(all_data$no < 11)%>%
+  tally(genre) %>%
+  select(no,genre, n) %>%
+  as_tbl_graph()%>%
+  convert(to_simple)%>%
+  mutate(betweeness = centrality_degree())%>%
+  as.igraph()
+
+plot(artgen)
+#write.graph(artgen, "~/Desktop/artgen.graphml", format=c("graphml"))
 ```
 
+```{r}
 
-
+```
