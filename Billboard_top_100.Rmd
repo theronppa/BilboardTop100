@@ -367,10 +367,17 @@ ggplot(most_frequent, aes(x=reorder(artist, n), y=n)) +
 
 ```
  
-## This tracks the years that had the most danceable years, taking music from the billboard top 100. 
-## By plotting a regression line, it shows that the late 1970's and 1980 hits the peak of the most danceable music era. Danceability then shows to decline into 2015, and predicts to continue in this direction. 
-```{r}
+It seems there is always something about these hits that make them reach the infamous Hot 100. Maybe we feel our inner child come alive with every catchy "ohh-lala", or hearing it on the radio 5 times a day makes them an integral part of our routines. But just how well do these big tracks fair on the dancefloor? 
 
+Luckily, the "spotify_track_data" dataset has worked the numbers for us on how danceable each track on the charts will be. According to these numebrs, the higher the danceabilty, the better time we'll have breaking it down. 
+
+Firstly, we'll look at how the danceability of tracks has changed throughout the years. In our regression graph below, little to our surprise, you can see that the disco era has proven in the numbers to have produced the music that speaks to our body and soul. Yes, boogie will always be king! 
+
+From then on, it seems we have to make peace with the dying days of dance, and accept that flossing to Justin Bieber's Despacito is the new Saturday Night Fever(sorry Travolta). The regression line doesn't lie, neither do our hips.
+
+<div style="width:50%;height:0;padding-bottom:75%;position:relative;"><iframe src="https://giphy.com/embed/3op5Txe6mc36sGbwOs" width="50%" height="50%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/twitter-nbaallstarweekend-3op5Txe6mc36sGbwOs">via GIPHY</a></p>
+ 
+```{r}
 toptrack <- spotify_track_data %>%
   group_by(year) %>%
   summarise(danceability = n())
@@ -385,8 +392,15 @@ ggplot(toptrack, aes(x= year,y= danceability)) +
 
 ```
 
+Now we're sure your mind has wondered, what are THE ultimate dance treffers?
 
-## Taking Daceability into consideration, we can then look at particularly the most danceable songs, and the least danceable songs. 
+We're here to ease your un-answered pains. 
+
+Again, the numbers say might bust-a-move, but maybe these don't quite make your go-to party playlist. 
+
+Planning a braai, turned disturb-the-neighbours kind of night? 
+Test-drive these top ten tuuunes, and swiftly avoid the bottom ten, and we can suggest which songs may fall into similiar categories. 
+
 ```{r Dataset, message=FALSE, warning=FALSE}
 # Load the enron dataset
 dance <- toptrack %>%
@@ -400,10 +414,13 @@ dance <- toptrack %>%
 plot(dance)
 ```
 
+What is the most likely element of a song that brings us to our feet other than it being written by Neil Diamond and titled as a an agreeable popular female name? WHO KNOWS! But we'll take a wild swing at Tempo for the time being. 
 
-##Taking Danceability into consideration, we can then look at the specific songs, instead of years that are the most danceable. Comparing these songs to Tempo, one can undestand the mean Tempo that makes a song Danceable.
+When looking at the Tempo numbers, the most danceable songs have an average Tempo sitting around 116 beats per minute. 
+Go too fast, the party can go from sweet sing-alongs to a gym class your never signed up for. 
+Go too slow, you find yourself with sweaty and anxious thoughts of years in fairy-lit school halls, not being asked to dance, in a dress you payed waaay too much for, for this lame night anyway. 
 
-##By looking at the Graph, the most danceable songs have an average Tempo of 116 beats per minute. 
+So mark our words - the bottom ten are a good reminder to keep it at a constant Tempo(damn should we be charging for life advice too?)
 
 ```{r}
 top_dancing_songs <- spotify_track_data %>%
@@ -426,7 +443,7 @@ pc2 + geom_point()+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-##Looking at the least danceable songs, one may think that the beats per minute might have a huge differing factor, but it appears the beats per minute sit at an average over 125 beats per minute. Looking at the data without taking the mean into consideration, it appears that these songs either have a very low beats per minute count or a very high beats per minute count. The range of this graph goes from below 50 beats per minute to over 200 beats per minute. This differs from the top danceable songs, where the graph's danceablity numbers range from 100 to 120 beats per minute. The majority of the songs also float close to the mean line. This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
+Looking at the least danceable songs, one may think that the beats per minute might have a huge differing factor, but it appears the beats per minute sit at an average over 125 beats per minute. Looking at the data without taking the mean into consideration, it appears that these songs either have a very low beats per minute count or a very high beats per minute count. The range of this graph goes from below 50 beats per minute to over 200 beats per minute. This differs from the top danceable songs, where the graph's danceablity numbers range from 100 to 120 beats per minute. The majority of the songs also float close to the mean line. This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
 ```{r}
 bottom_dancing_songs <- spotify_track_data %>%
   arrange(danceability) %>%
