@@ -19,7 +19,7 @@ Get Data
 ```{# r}
 data(lyrics, package="billboard")
 data(wiki_hot_100s,  package="billboard") 
-
+ n 
 lyrics_only <- lyrics %>%
   select(lyrics)
 
