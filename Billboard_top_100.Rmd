@@ -272,29 +272,13 @@ all_data$genre_data <- NULL
 ```
 
 Call Data
-```{#r}
-all_data <- readRDS("data_in/all_data.rds")
+```{r eval = FALSE}
+all_data <- readRDS("data_out/all_data_clean.rds")
 ```
 
 Temp Get Data
 ```{r get_data}
-data(lyrics, package = 'billboard')
-data(wiki_hot_100s, package = 'billboard')
-data(spotify_track_data, package = 'billboard')
-
-lyrics
-as_tbl_graph(lyrics)
-wiki_hot_100s
-
-lyrics_only <- lyrics%>%
-  select(lyrics)
-
-lyrics_tidy <- as_tbl_graph(lyrics)
-
-ranked_data <- wiki_hot_100s%>%
-  cbind(lyrics_only)
-
-ranked_data <- mutate(ranked_data, id = rownames(ranked_data))
+all_data <- mutate(all_data, id = rownames(all_data))
 ```
 
 Some pre processing cleaning
@@ -305,9 +289,24 @@ all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_s
 all_stops <- data.frame(all_stops)
 colnames(all_stops) <- "word"
 ```
+
+Cleaning some of the data
+```{r eval = False}
+all_data <- as.data.table(all_data)
+all_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", all_data$lyrics)
+
+all_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
+all_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", all_data$lyrics)
+all_data$lyrics<-  gsub(",", " ",all_data$lyrics)
+
+all_data_clean <- saveRDS(all_data,"data_out/all_data_clean.rds")
+``` 
+
 Doing term frequency on the lyrics column and unnesting the words to find the most common terms and dirty data.
 ```{r eval=FALSE}
-Terms <- ranked_data %>%
+
+all_data <- data.frame(all_data)
+Terms <- all_data %>%
   unnest_tokens(word,lyrics) %>%
   anti_join(all_stops, by = 'word')%>%
   count(word, sort = TRUE)%>%
@@ -315,20 +314,12 @@ Terms <- ranked_data %>%
 
 ```
 
-Cleaning some of the data
-```{r eval = FALSE}
-ranked_data <- as.data.table(ranked_data)
-ranked_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", ranked_data$lyrics)
-
-ranked_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
-ranked_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", ranked_data$lyrics)
-```
-
 
 Create a word Cloud
-```{r eval=FALSE}
-
-corpus <- Corpus(VectorSource(ranked_data$lyrics))
+```{r eval = FALSE}
+all_data_lyrics <- all_data %>%
+  select(lyrics)
+corpus <- Corpus(VectorSource(all_data_lyrics$lyrics))
 dtm <- TermDocumentMatrix(corpus)
 
 m <- as.matrix(dtm)
@@ -337,10 +328,13 @@ d <- data.frame(word = names(v),freq=v)
 
 d <- d%>%
   anti_join(stop_words, by = "word")
-head(d, 10)
 
+word_cloud_all <- saveRDS(d,"data_out/d_word_cloud.rds")
 #Word cloud on artists instead
+```
 
+```{r}
+d <- readRDS("data_out/d_word_cloud.rds")
 
 set.seed(1234)
 wordcloud(words = d$word, freq = d$freq, min.freq = 1,
