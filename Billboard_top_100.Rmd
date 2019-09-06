@@ -33,7 +33,7 @@ Each of these sets provide us with useful information, regarding the different c
 
 Packages
 ```{r}
-pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr)
+pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr,ggplot)
 ```
 
 # Some cleaning text
@@ -159,6 +159,10 @@ lyrics_added <- rbind(lyric_no_NA, na_lyrics)
 # saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
 all_data_lyrics <- readRDS("data_in/all_data_lyrics.rds")
 ```
+
+Now we have some squeaky clean data, we need to see what else could be missing. 
+
+We know everyone has their favourite artists
 
 GENRE
 ```{# r}
@@ -322,7 +326,7 @@ ranked_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", ranked_data$lyrics)
 
 
 Create a word Cloud
-```{r}
+```{r eval=FALSE}
 
 corpus <- Corpus(VectorSource(ranked_data$lyrics))
 dtm <- TermDocumentMatrix(corpus)
@@ -345,7 +349,7 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 ```
 
 Which artist is featured the most? Top 20 from 1960 to 2018
-```{r}
+```{r eval = FALSE}
 most_frequent <- ranked_data %>%
   group_by(artist) %>%
   tally() %>% 
@@ -425,7 +429,7 @@ Go too slow, you find yourself with sweaty and anxious thoughts of years in fair
 
 So mark our words - the bottom ten are a good reminder to keep it at a constant Tempo(damn should we be charging for life advice too?)
 
-```{r}
+```{r eval=FALSE}
 top_dancing_songs <- spotify_track_data %>%
   arrange(desc(danceability)) %>%
   head(10)
@@ -446,8 +450,15 @@ pc2 + geom_point()+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-Looking at the least danceable songs, one may think that the beats per minute might have a huge differing factor, but it appears the beats per minute sit at an average over 125 beats per minute. Looking at the data without taking the mean into consideration, it appears that these songs either have a very low beats per minute count or a very high beats per minute count. The range of this graph goes from below 50 beats per minute to over 200 beats per minute. This differs from the top danceable songs, where the graph's danceablity numbers range from 100 to 120 beats per minute. The majority of the songs also float close to the mean line. This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
-```{r}
+
+The range of this graph goes from below 50 beats per minute to over 200 beats per minute. 
+
+This differs from the top danceable songs, where the graph's danceablity numbers range from 100 to 120 beats per minute. The majority of the songs also float close to the mean line. 
+
+This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
+
+
+```{r eval=False}
 bottom_dancing_songs <- spotify_track_data %>%
   arrange(danceability) %>%
   head(10)
@@ -489,38 +500,33 @@ See plot below: (MARETTE HIERSOOOOOOOOOOOOOOO)
 
 #Sentiment Analysis
 
-As a interesting topic, we decided to run sentiment analysis on the lyrics provided by each song and artist, to determine if artists over the years tend to write about more negative or positive sentiments.
+There's a song for every mood, and maybe some a bit more morbid than others. 
+Ever wondered about the lyrics of the songs you listen to? 
+Upbeat tunes, but some pretty bleak lyrics, means that these songs will not score well on our sentiment analysis. 
 
-```{r eval=False}
+As an interesting topic, we decided to run sentiment analysis on the lyrics provided by each song and artist, to determine if artists over the years tend to write about more negative or positive sentiments. Sentiment dispersion is very diverse, as to be expected when dealing with a genre as diverse as music.
 
-ranked_data <- ranked_data%>%
-  sample_frac(0.5)
+```{r eval=False, fig.width= 30, fig.height=30}
 
-sent <- sentiment_by(ranked_data$lyrics,  #does not run that long. EZ
-               polarity_dt = lexicon::hash_sentiment_jockers_rinker,
-               valence_shifters_dt = lexicon::hash_valence_shifters,
-               averaging.function = sentimentr::average_weighted_mixed_sentiment,
-               hyphen = " ",
-               amplifier.weight = 2, 
-               n.before = 3, 
-               n.after = 3,
-               question.weight = 0, 
-               adversative.weight = 0.25,
-               neutral.nonverb.like = TRUE,
-            
-)
+#plot(sent_tot$year,sent_tot$ave_sentiment)
 
-sent_tot <- ranked_data%>%
-  cbind(sent)%>%
-  select(title,artist,lyrics,year,ave_sentiment)
+#ggplot(data = sent_tot, aes(x = sent_tot$year, y = sent_tot$ave_sentiment)) + geom_boxplot()
+#theme_set(theme_bw())
 
-sent_tot_tbl <- sent_tot%>%
-  select(artist,title)%>%
-  group_by(artist)%>%
-  as_tbl_graph()%>%
-  activate(nodes)
+#plot1 <-
 
-plot(sent_tot$year,sent_tot$ave_sentiment)
+         ggplot(sent_tot, aes(x=sent_tot$year, y=sent_tot$ave_sentiment, color=year)) + 
+         geom_point(stat='identity', color="black", size=1)  +
+         geom_segment(aes(y = 0, 
+                   x = sent_tot$year, 
+                   yend = sent_tot$ave_sentiment, 
+                   xend = sent_tot$year))+
+         labs(title="Sentiment Over the years") + 
+         ylim(-8.5, 8.5) +
+         theme(axis.text.y = element_text(colour="blue", size= 5)) +
+         coord_flip() +
+           xlab("Year") + ylab("Average Sentiment")
+
 
 sent_neg <- sent_tot%>%
   filter(ave_sentiment < 0)%>%
