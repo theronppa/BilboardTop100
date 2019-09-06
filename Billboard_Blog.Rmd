@@ -35,14 +35,14 @@ Although incomplete, within the dataset one can find a few useful packages.
 
 Each of these sets provide us with useful information, regarding the different characteristics of the tracks.
 
-Packages
+Packages used:
 ```{r}
 pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr)
 ```
 
 # Scraping Data 
 
-The current dataset provided by Billboard does not have the top 100 songs for 2017 and 2018, utilizing the rvest package to scrape the Wikipedia website we are able to grab the remaining songs’ titles and artists.  The lyric column for 2018 and 2017 are set to NA for later utilization.
+The current dataset provided by Billboard does not have the top 100 songs for 2017 and 2018, utilizing the rvest package to scrape the Wikipedia website we are able to grab the remaining songs’ titles and artists for the Billboard top 100!.
 
 ```{r eval=FALSE}
 
@@ -87,7 +87,7 @@ The following r chunk populates the songs in the dataset that have a NA value in
 
 ```{r eval=FALSE, include=FALSE}
 # authentication for spotify API
-my_oauth <- spotifyOAuth(app_id="top 100",client_id="XXXXXXXXXXXXXXXXXXXXXXXXX",client_secret="XXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+my_oauth <- spotifyOAuth(app_id="top 100",client_id="XXXXXXXXXXXXXXXXXXXXXXXXX",client_secret="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 ```
 
 There are a lot of lyrics that are missing from the dataset. Here we subset the data with missing lyrics and add it!
@@ -353,6 +353,28 @@ wordcloud(words = swear_terms$word, freq = swear_terms$freq, min.freq = 1,
           colors=brewer.pal(8, "Dark2"))
 ```
 
+
+
+Phew, those were some hefty answers in the swear-word-cloud. Has music always been as vulgar as this? Looking back, using the oh-so-useful Spotify data we can identify if a song is generalized as explicit or not. Clearly those old people were on to something as the vulgar-ness of music has risen over the last phew decades. Being almost non existent. Peaking in the early 2000's to an absurd degree of more than 30 explicit songs on the billboard 100. One can argue that since the dawn of the new decade a more modern PC culture has been adapted - for better and for worse - therefor resulting in the explicitness of the modern treffer to be tamer than its predecessors.
+
+```{r}
+data(spotify_track_data,package="billboard")
+spot_data_explicit <- spotify_track_data%>%
+  select(year,explicit)
+
+tab_sum = spot_data_explicit %>%
+  group_by(year) %>%
+  filter(explicit)%>%
+  summarise(trues = n())
+
+ggplot(tab_sum, aes(x= tab_sum$year, y =tab_sum$trues)) +
+  geom_bar(stat="identity")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  xlab("Year") + ylab("Amount of Explicit songs")
+
+```
+
+
 #Question 3 : 
 Most danceable era's and tempo's in most and least danceable songs
 
@@ -395,7 +417,6 @@ Planning a braai-turned disturb-the-neighbours kind of night?
 Test-drive these top ten tuuunes, and swiftly avoid the bottom ten, and we can suggest which songs may fall into similiar categories. 
 
 ```{r Dataset, message=FALSE, warning=FALSE}
-# Load the enron dataset
 dance <- toptrack %>%
   select(year, danceability) %>%
   group_by(year) %>%
@@ -404,7 +425,16 @@ dance <- toptrack %>%
   mutate(
     deg = centrality_degree()
   )
-plot(dance)
+
+V(dance)$type <- bipartite.mapping(dance)$type
+
+V(dance)$color <- ifelse(V(dance)$type, "lightblue", "salmon")
+V(dance)$shape <- ifelse(V(dance)$type, "square", "circle")
+```
+
+Here one can see that the circle indicates the different years and the squares represent the dancibility. This shows us how which years are linked to which degree of dancibility.
+```{r fig.width=10}
+plot(dance, vertex.label.color="black", vertex.size=(2-V(dance)$type)*8)
 ```
 
 What is the most likely element of a song that brings us to our feet other than it being written by Neil Diamond and titled as a an agreeable popular female name? WHO KNOWS! But we'll take a wild swing at Tempo for the time being. 
@@ -589,17 +619,20 @@ only_colab_stay <- only_colab %>% # Artist that should not be split.
          artist_1 == "Timbaland & Magoo" |
          artist_2 == "Trina & Tamara" |
          artist_2 == "8Ball & MJG")
+
 # Subset these artist to that they are not affected by the split
 only_colab_rem <- subset(only_colab, artist_1 != "Marky Mark and the Funky Bunch")
 only_colab_rem <- subset(only_colab_rem, artist_1 != "Michael Franti & Spearhead")
 only_colab_rem <- subset(only_colab_rem, artist_1 != "Timbaland & Magoo")
 only_colab_rem <- subset(only_colab_rem, artist_2 != "Trina & Tamara")
 only_colab_rem <- subset(only_colab_rem, artist_2 != "8Ball & MJG")
+
 # split remaining artist on key words
 only_colab <- separate_rows(only_colab_rem, artist_1, sep = 'and ')
 only_colab <- separate_rows(only_colab, artist_1, sep = '& ')
 only_colab <- separate_rows(only_colab, artist_2, sep = '& ')
 only_colab <- separate_rows(only_colab, artist_1, sep = 'with ')
+
 # Artists that spelling differed. Thus, changed to make the names uniform
 colab_all <- rbind(only_colab, only_colab_stay)
 colab_all[620]$artist_2 <- "Tyga"
@@ -626,7 +659,9 @@ colab_all[, artist_2 := str_remove_all(artist_2, pattern = "\\s$"),""]
 
 Now the data should be ready and all the collaborating artists will be split! Let's find out what these connections between the collaborating artists mean!
 
-## 6.1 Genres found after community detection :
+## 6.1 Genres found after Community Detection :
+
+Communities are an important part to the analysis of this dataset. Although genres act as a sort of label for artists, we want to find out if community detection can correlate with the labelled genres. By forming clusters with collaborating artist we are able to detect inherent communities via a community detection aldu-rhythm called Louvain.
 
 It was assumed that collaborations would primarilly occur in the same genre. We thus ran the `louvain community detection` algorithm to distinguish the different artists in the defined communities. The reason why we choose the louvain method is because of it's fast processing time, responsiveness and accuracy on bigger datasets like this one.
 
@@ -644,27 +679,46 @@ knitr::include_graphics('DiagramsGephi/Rock.png')
 ```
 
 
-## 6.2 Cam someone be a bridge to other genre communities : 
+## 6.2 Can someone be a bridge to other genre communities : 
 
-We did this by focusing on one communty in our data and looking at how certain artist acted as bridges to other genres. 
-Rihanna can be seen playing this role as a bridge between the electronic, rap , and pop communities.
-```{r echo=FALSE}
+```{r echo=FALSE, fig.align='center' }
 knitr::include_graphics('DiagramsGephi/Screenshot2.png') 
+```
+
+Highlighting the bridges between the different clusters helps us identify the way in which communities can be linked to each other. Bridges in our case are amazing opportunites for more mixes to our grooves.  Who wants just some plain old counrty when you could be jamming out to possible canadian-country-punk-rap collaborations.
+
+We were able to observe such an ocurrence in Drake’s pop community.  Here , Rihanna seems to be playing a strong bridging role in her community exposing it to more genres and possibily making it easier for artists inside her community to do future collaborations through her existing ties.
+
+*Drake's Pop Community*
+```{r echo=FALSE, fig.align='center' }
 knitr::include_graphics('DiagramsGephi/Screenshot3.png')  #focused community
 ```
 
-Three different genre communities: 
+Rihanna seems to be connecting her own community to the electronic world through her colaboration with Calvin Harris, whom is a prominent figure in that group.
+
+*Clavin Harris Electronic Community* 
 ```{r echo=FALSE, fig.align='center'}
 knitr::include_graphics('DiagramsGephi/ScreenshotCalvin.png')  #Calvin community Elelctronic
-knitr::include_graphics('DiagramsGephi/ScreenshotRap.png')   # Rap communinty 
-knitr::include_graphics('DiagramsGephi/ScreenschotDrake.png')  # Pop community 
 ```
 
-Rihanna as bridge
+*DJ Khalid Rap Community* 
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('DiagramsGephi/ScreenshotRap.png')   # Rap communinty 
+```
+
+By having a relationship with Calvin Harris she is inadvertedly also tied to this spesific cluster therefor resulting in Rihanna acting as a bridge. Consequently this can lead to other pop artists also starting to collaborate with artists in the electronic community.
+
+She also seems to be extending her ties to the rap neighborhood through DJ Khalid.
+
+*Rihanna tuly seems to Shine bright like a bridging node*
 ```{r fig.align='center', echo=FALSE}
 knitr::include_graphics('DiagramsGephi/ScreenshotRiri.png')   # Rihanna as bridge 
 ```
 
+
+# Conclusion 
+
+<add concluding remark> 
 
 
 
