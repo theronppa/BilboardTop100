@@ -502,24 +502,35 @@ As an interesting topic, we decided to run sentiment analysis on the lyrics prov
 
 ```{r eval=False, fig.width= 30, fig.height=30}
 
-#plot(sent_tot$year,sent_tot$ave_sentiment)
+sent <- sentiment_by(ranked_data$lyrics,  #does not run that long. EZ
+               polarity_dt = lexicon::hash_sentiment_jockers_rinker,
+               valence_shifters_dt = lexicon::hash_valence_shifters,
+               averaging.function = sentimentr::average_weighted_mixed_sentiment,
+               hyphen = " ",
+               amplifier.weight = 2, 
+               n.before = 3, 
+               n.after = 3,
+               question.weight = 0, 
+               adversative.weight = 0.25,
+               neutral.nonverb.like = TRUE,
+            
+)
 
-#ggplot(data = sent_tot, aes(x = sent_tot$year, y = sent_tot$ave_sentiment)) + geom_boxplot()
-#theme_set(theme_bw())
+sent_tot <- ranked_data%>%
+  cbind(sent)%>%
+  select(title,artist,lyrics,year,ave_sentiment)
 
-#plot1 <-
-
-         ggplot(sent_tot, aes(x=sent_tot$year, y=sent_tot$ave_sentiment, color=year)) + 
-         geom_point(stat='identity', color="black", size=1)  +
-         geom_segment(aes(y = 0, 
-                   x = sent_tot$year, 
-                   yend = sent_tot$ave_sentiment, 
-                   xend = sent_tot$year))+
-         labs(title="Sentiment Over the years") + 
-         ylim(-8.5, 8.5) +
-         theme(axis.text.y = element_text(colour="blue", size= 5)) +
-         coord_flip() +
-           xlab("Year") + ylab("Average Sentiment")
+ggplot(sent_tot, aes(x=sent_tot$year, y=sent_tot$ave_sentiment, color=year)) + 
+geom_point(stat='identity', color="black", size=1)  +
+geom_segment(aes(y = 0, 
+              x = sent_tot$year, 
+              yend = sent_tot$ave_sentiment, 
+              xend = sent_tot$year))+
+labs(title="Sentiment Over the years") + 
+ylim(-8.5, 8.5) +
+theme(axis.text.y = element_text(colour="blue", size= 5)) +
+coord_flip() +
+  xlab("Year") + ylab("Average Sentiment")
 
 
 sent_neg <- sent_tot%>%
