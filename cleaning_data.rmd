@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-pacman::p_load()
+pacman::p_load(tidyr)
 ```
 # Cleaning the Data using REGEX etc
 
@@ -36,3 +36,14 @@ ranked_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", ranked_data$lyrics)
 ranked_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
 ranked_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", ranked_data$lyrics)
 ```
+
+
+```{r}
+collab <- readRDS("Colaboration.rds")
+
+test <- separate_rows(collab, Artist_1 ,sep = ", ")
+
+test1 <- separate_rows(test, Art2 ,sep = ", ")
+
+```
+
