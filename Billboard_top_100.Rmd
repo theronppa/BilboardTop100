@@ -349,6 +349,29 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
           colors=brewer.pal(8, "Dark2"))
 ```
 
+Create a wordcloud for the most prominent swear words.
+
+```{r}
+swear_words <- c("fuck","shit","freak","bastard","sex","damn","ass","cock","penis","pussy","dick","lame","slut","whore","motherfucker","hell","prick","crap","fucking","vagina")
+swear_words <- as.data.frame(swear_words)
+swear_words <- swear_words%>%
+  rename("word" = swear_words)
+
+d_swear <- readRDS("data_out/d_word_cloud.rds")
+
+
+swear_terms <- d_swear%>%
+  anti_join(stop_words, by = "word")%>%
+  right_join(swear_words, by = "word")
+```
+The Word Cloud of all the most prominent swear words in the lyrics.
+```{r}
+set.seed(1234)
+wordcloud(words = swear_terms$word, freq = swear_terms$freq, min.freq = 1,
+          max.words=200, random.order=TRUE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
 But who is crowned top of the Billboard Top 100? Let's have a look at who is featured the most from 1960-2018. 
 
 ```{r eval = FALSE}
