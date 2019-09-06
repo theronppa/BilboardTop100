@@ -283,7 +283,7 @@ Call Data
 all_data <- readRDS("data_out/all_data_clean.rds")
 ```
 
-Temp Get Data
+Adding Id's to the rows
 ```{r get_data}
 all_data <- mutate(all_data, id = rownames(all_data))
 ```
@@ -375,7 +375,7 @@ wordcloud(words = swear_terms$word, freq = swear_terms$freq, min.freq = 1,
 But who is crowned top of the Billboard Top 100? Let's have a look at who is featured the most from 1960-2018. 
 
 ```{r eval = FALSE}
-most_frequent <- ranked_data %>%
+most_frequent <- all_data %>%
   group_by(artist) %>%
   tally() %>% 
   select(artist, n) %>%
