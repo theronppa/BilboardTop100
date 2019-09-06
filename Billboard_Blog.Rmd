@@ -1,0 +1,434 @@
+---
+title: "Report"
+author: "Dream Team"
+date: "9/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Billboard 100 ( Report  of the years )
+
+# Introduction 
+
+"Without music, life would be a mistake". Should we take this lightly? Would you ignore the wise words of Nietzsche? 
+Well that's who we're quoting from, and neither would we. 
+
+Being the keen data-analysts we are, we wanted to check the numbers on our most fabourite tracks over the years. 
+
+As much as we would want to know where our beloved Johnny Clegg's and Ladysmith Black Mambazo's would rank on the charts, the best dataset to work with is of course the  Billboard Top 100. 
+
+This dataset boasts the Top 100 hits from 1960 to 2015 across the United States. This set includes four packages within the dataset that we were able to conduct network analysis and inferences upon. 
+
+We had to make a few tweaks so we could dsiplay the loveliest most reliablest data for you. This meant with a little web scraing and a little love, we included the lyrics of the songs for 2017 and 2018 Billboard Top 100, on top of the incomplete downloadable set.
+
+Although incomplete, within the dataset one can find a few useful packages. 
+
+..*lyrics
+..*spotify_playlists
+..*spotify_track_data
+..*wiki_hot_100s
+
+Each of these sets provide us with useful information, regarding the different characteristics of the tracks.
+
+Packages
+```{r}
+pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr,ggplot)
+```
+
+# Scraping
+
+```{r}
+data(lyrics, package="billboard")
+data(wiki_hot_100s,  package="billboard") 
+
+lyrics_only <- lyrics %>%
+  select(lyrics)
+
+ranked_data <- wiki_hot_100s %>%
+  cbind(lyrics_only)
+
+url_2017 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2017"
+url_2018 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2018"
+
+top_100_2017 <- url_2017 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
+  html_table()
+top_100_2017 <- top_100_2017[[1]]
+
+top_100_2018 <- url_2018 %>%
+  read_html() %>%
+  html_nodes(xpath='//*[@id="mw-content-text"]/div/table') %>%
+  html_table()
+top_100_2018 <- top_100_2018[[1]]
+
+top_100_2017['Year'] <- 2017
+top_100_2018['Year'] <- 2018
+
+colnames(top_100_2017) <- c("no", "title", "artist", "year")
+colnames(top_100_2018) <- c("no", "title", "artist", "year")
+
+top_100_2017[] <- lapply(top_100_2017, gsub, pattern='"', replacement='')
+top_100_2018[] <- lapply(top_100_2018, gsub, pattern='"', replacement='')
+
+top_100_2017$lyrics <- NA
+top_100_2018$lyrics <- NA
+
+new_df  <- rbind(top_100_2017, top_100_2018)
+df_all_no_lyrics <- rbind(ranked_data, new_df)
+
+na_lyrics <- df_all_no_lyrics %>%
+  filter(is.na(df_all_no_lyrics$lyrics))
+lyric_no_NA <- na.omit(df_all_no_lyrics)
+```
+
+## lyrics 
+
+```{r}
+datalist <- list()
+for (row in 1:nrow(na_lyrics)) {
+  print(row)
+  x <- possible_lyrics(artist = str_remove_all(na_lyrics[3]$artist[row], '"'), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+  if (grepl("featuring", na_lyrics[3]$artist[row])) {
+    z <- gsub("featuring.*","",na_lyrics[3]$artist[row])
+    x <- possible_lyrics(artist = substr(z, 1, nchar(z)-1), song = str_remove_all(na_lyrics[2]$title[row], '"'), info = "simple")
+    if (length(x) == 0) {
+      datalist[[row]] <- NA
+    }else {
+      datalist[[row]] <- x %>%
+          summarise(lyrics = paste(lyric, collapse=", "))
+    }
+  }else if (length(x) != 0){
+    datalist[[row]] <- x %>%
+        summarise(lyrics = paste(lyric, collapse=", "))
+  }else {
+    datalist[[row]] <- NA
+  }
+}
+lyrics_data = do.call(rbind, datalist)
+na_lyrics$lyrics <- lyrics_data
+
+lyrics_added <- rbind(lyric_no_NA, na_lyrics)
+# saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
+all_data_lyrics <- readRDS("data_in/all_data_lyrics.rds")
+```
+
+##  genres
+
+```{r}
+artist_genre <- list()
+for (row in 1:nrow(top_100_2017)) {
+  print(row)
+  if (row == 4627 | row == 4626 | row == 4628) {
+    next
+  }
+  if (grepl("featuring", top_100_2017[[3]][row])) {
+    
+    z <- gsub("featuring.*","",top_100_2017[[3]][row])
+    genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[5]$genres[1]
+    
+    if (is.null(genre)) {
+      if (grepl("and", top_100_2017[[3]][row])) {
+        
+        x <- gsub(" and.*","",top_100_2017[[3]][row])
+        x[] <- lapply(x, gsub, pattern='"', replacement='')
+        genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
+        
+        if (is.null(genre)) {
+          artist_genre[[row]] <- NA
+        }else {
+          artist_genre[[row]] <- sub("\\,.*", "", genre)
+        }
+        
+      }else{
+        artist_genre[[row]] <- NA
+      }
+    }else {
+      artist_genre[[row]] <- sub("\\,.*", "", genre)
+    }
+    
+  }else if (grepl("and", top_100_2017[[3]][row])) {
+    
+    x <- gsub(" and.*","",top_100_2017[[3]][row])
+    x[] <- lapply(x, gsub, pattern='"', replacement='')
+    genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
+    if (is.null(genre)) {
+      artist_genre[[row]] <- NA
+    }else {
+      artist_genre[[row]] <- sub("\\,.*", "", genre)
+    }
+    
+  }else {
+    
+    genre <- searchArtist(top_100_2017[[3]][row],token = my_oauth)[5]$genres[1]
+    if (is.null(genre)) {
+      artist_genre[[row]] <- NA
+    }else {
+      artist_genre[[row]] <- sub("\\,.*", "", genre)
+    } 
+    
+  }
+}
+genre_data <- do.call(rbind, artist_genre)
+data_with_genre <- cbind(lyrics_added, genre_data) # 4627
+# saveRDS(data_with_genre, 'all_data_genre_not_generalised.rds')
+
+all_data_genre_ungen <- readRDS("all_data_genre_not_generalised.rds")
+```
+
+In order to get the genres of these tracks, we had search by the artist. 
+The search results would return numerous genres back, making it diffuclt to deduce significant results from the dataset. 
+
+This meant generalizing our artists into one genre.(sorry, but pop is pop is pop)
+
+Once we were able to get a genre for each artist, then we could generaliza these into 8 neat litle categories.
+
+```{r}
+pop <- c('dance pop', 'pop', 'pop christmas', 'post-teen pop', 'new wave pop', 'brill building pop', 'bubblegum pop', 'canadian pop', 'boy band', 'europop', 'viral pop', 'synthpop', 'pop punk', 'canadian hip hop', 'afropop', 'classic girl group', 'girl group', 'australian dance', 'k-hop')
+
+rap <- c('pop rap', 'rap', 'southern hip hop', 'hip hop', 'trap music', 'dirty south rap', 'gangster rap', 'east coast hip hop', 'hardcore hip hop', 'hip pop', 'hip house', 'rap metal', 'dwn trap', 'emo rap')
+
+rock <- c('mellow gold', 'soft rock', 'rock', 'album rock', 'pop rock', 'classic rock', 'folk rock', 'hard rock', 'dance rock', 'roots rock', 'southern rock', 'blues-rock', 'alternative rock', 'funk rock', 'psychedelic rock', 'rock-and-roll', 'modern rock', 'art rock', 'classic funk rock', 'adult standards', 'rockabilly', 'merseybeat', 'surf music', 'deep adult standards', 'rhythm and blues', 'louisiana blues', 'blues', 'melodic metalcore', 'glam metal', 'alternative metal', 'comic metal', 'nu metal')
+
+electronic <- c('tropical house', 'edm', 'brostep', 'bmore', 'broken beat', 'dark trap', 'deep groove house', 'retro electro', 'drum and bass', 'italian techno', 'electronic', 'dubstep', 'finnish electro', 'complextro', 'house', 'cyberpunk', 'electro')
+
+r_and_b <- c('r&b', 'urban contemporary', 'deep pop r&b', 'indie r&b', 'doo-wop', 'modern reggae', 'easy listening', 'reggae', 'uk reggae')
+
+soul  <- c('motown', 'disco', 'soul', 'funk', 'neo soul', 'soul christmas', 'new jack swing', 'memphis soul', 'chicago soul', 'southern soul', 'soul blues', 'post-disco', 'quiet storm', 'jazz blues', 'jazz funk', 'electric blues', 'latin', 'christian relaxative', 'memphis soul', 'classic soul', 'indie jazz', 'bebop', 'dixieland', 'avant-garde jazz', 'jazz trumpet', 'smooth jazz', 'classical')
+
+country <- c('country',' contemporary country', 'country christmas', 'country road', 'modern country rock', 'country rock', 'traditional country', 'folk christmas', 'folk', 'folk-pop', 'nashville sound', 'country dawn', 'traditional folk', 'outlaw country', 'country gospel','arkansas country', 'american folk revival', 'alabama indie', 'london indie', 'alaska indie')
+
+other <- c('beach music', 'background music', 'rif', 'disney', 'chillwave', 'comic', 'british invasion', 'compositional ambient', 'canadian celtic')
+
+all_data <- all_data_genre_ungen
+
+all_data$genre <- ifelse(grepl(paste(pop, collapse = "|"), all_data$genre_data), "pop",
+             ifelse(grepl(paste(rap, collapse = "|"), all_data$genre_data), "rap",
+             ifelse(grepl(paste(rock, collapse = "|"), all_data$genre_data), "rock",
+             ifelse(grepl(paste(electronic, collapse = "|"), all_data$genre_data), "electronic",
+             ifelse(grepl(paste(r_and_b, collapse = "|"), all_data$genre_data), "r&b",
+             ifelse(grepl(paste(soul, collapse = "|"), all_data$genre_data), "soul",
+             ifelse(grepl(paste(other, collapse = "|"), all_data$genre_data), "other",      
+             ifelse(grepl(paste(country, collapse = "|"), all_data$genre_data), "country", "other"))))))))
+all_data$genre_data <- NULL
+
+
+# saveRDS(all_data, file = "data_in/all_data.rds")
+```
+
+# Cleaning 
+* section about cleaning data * 
+
+Before diving into the analysis of this dataset, we need clean data. The dataset might look clean, but has inconsistencies scattered throughout. 
+
+One of the biggest challenges was seperating the artists from the featured artists. This posed an indepth cleaning regime by using regular expressions and packages from R to seperate the different artists into their own respective columns. By doing this, we can create a network of artists and their collaborators, and link their respective featured songs as edges. 
+Another challenge was collecting lyrics for songs that were not available on the original dataset - so we had to pull it from an external source via a scrapper. 
+
+As genre's are an important aspect of this analysis - we had to pull in genres from a Spotify API, and generalise them. It was identifed that there was over 800 different genres, so we decided for community and conveinence sake, to generalise them into broader groups.
+
+This provides the opportunity the gain insight into which artists tend to collaborate together and which genre is the most popular among the community of artists.
+
+Some pre processing cleaning
+Adding the stopwords for term frequence - to detect filthy data.
+```{r eval = False}
+all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_smart$en,"the",'" The"',"told", "and.")
+all_stops <- data.frame(all_stops)
+colnames(all_stops) <- "word"
+```
+
+Doing term frequency on the lyrics column and unnesting the words to find the most common terms and dirty data.
+```{r eval=FALSE}
+
+all_data <- data.frame(all_data)
+Terms <- all_data %>%
+  unnest_tokens(word,lyrics) %>%
+  anti_join(all_stops, by = 'word')%>%
+  count(word, sort = TRUE)%>%
+  mutate(len=nchar(word))
+
+```
+
+By utlizing term frequency we were able to detect common filthy data, like extra whitespace and lyric identifiers such as [Chorus] and [Verse].
+```{r eval = False}
+all_data <- as.data.table(all_data)
+all_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", all_data$lyrics)
+
+all_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
+all_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", all_data$lyrics)
+all_data$lyrics<-  gsub(",", " ",all_data$lyrics)
+
+all_data_clean <- saveRDS(all_data,"data_out/all_data_clean.rds")
+```
+ 
+# Report questions 
+Question 1 : Most promonent words in lyrics 
+Question 2 : Most promonent curse  words in lyrics 
+Question 3 : Most danceable era's and tempo's in most and least danceable songs
+
+# Question 1 :  Most promonent words in lyrics
+The most prominent words present in the entire corpus over the last 58 years.
+Word clouds are always a good tool to visualize all the facts. By unnesting the different words within the lyrics column and transforming it into a document term matrix we were able to create a dataset consisting of only the most prominently used words.
+```{r eval = FALSE}
+all_data_lyrics <- all_data %>%
+  select(lyrics)
+corpus <- Corpus(VectorSource(all_data_lyrics$lyrics))
+dtm <- TermDocumentMatrix(corpus)
+
+m <- as.matrix(dtm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+d <- d%>%
+  anti_join(stop_words, by = "word")
+
+word_cloud_all <- saveRDS(d,"data_out/d_word_cloud.rds")
+``` 
+*graphs* 
+```{r}
+d <- readRDS("data_out/d_word_cloud.rds")
+
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+* answer from inference *
+
+
+# Question 2 : 
+Most promonent curse  words in lyrics. What is a song without some explicity? The following word cloud displays the most prominent swearwords. The swearword dictionary was proved by yours truly.
+```{r}
+swear_words <- c("fuck","shit","freak","bastard","sex","damn","ass","cock","penis","pussy","dick","lame","slut","whore","motherfucker","hell","prick","crap","fucking","vagina")
+swear_words <- as.data.frame(swear_words)
+swear_words <- swear_words%>%
+  rename("word" = swear_words)
+
+d_swear <- readRDS("data_out/d_word_cloud.rds")
+
+
+swear_terms <- d_swear%>%
+  anti_join(stop_words, by = "word")%>%
+  right_join(swear_words, by = "word")
+```
+The Word Cloud of all the most prominent swear words in the lyrics.
+```{r}
+set.seed(1234)
+wordcloud(words = swear_terms$word, freq = swear_terms$freq, min.freq = 1,
+          max.words=200, random.order=TRUE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+* data approach data * 
+*graphs* 
+* answer from inference *
+
+#Question 3 : 
+Most danceable era's and tempo's in most and least danceable songs
+
+It seems there is always something about these hits that make them reach the infamous Hot 100. Maybe we feel our inner child come alive with every catchy "ohh-lala", or hearing it on the radio 5 times a day makes them an integral part of our routines. But just how well do these big tracks fair on the dancefloor? 
+
+Luckily, the "spotify_track_data" dataset has worked the numbers for us on how danceable each song on the charts actually is. According to these numbers, the higher the danceabilty, the more we'll be breaking it down and begging the DJ for more. 
+
+Firstly, we'll look at how the danceability of tracks has changed throughout the years. 
+In our regression graph below, little to our surprise, you can see that the disco era has proven in the numbers to have produced the music that speaks to our body and soul. 
+Yes, boogie will always be king! 
+
+From then on, it seems we have to make peace with the dying days of dance, and accept that flossing to Justin Bieber's Despacito is the new Saturday Night Fever(sorry Travolta). The regression line doesn't lie, neither do our hips.
+
+<div style="width:50%;height:0;padding-bottom:75%;position:relative;"><iframe src="https://giphy.com/embed/3op5Txe6mc36sGbwOs" width="50%" height="50%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/twitter-nbaallstarweekend-3op5Txe6mc36sGbwOs">via GIPHY</a></p>
+ 
+```{r}
+toptrack <- spotify_track_data %>%
+  group_by(year) %>%
+  summarise(danceability = n())
+
+toptrack$year <- as.numeric(as.character(toptrack$year))
+
+ggplot(toptrack, aes(x= year,y= danceability)) + 
+  geom_point() + 
+  stat_smooth(method = "lm",
+              formula = y ~ x + poly(x, 2) - 1) + 
+  labs(x = "Year", y = "Danceability")
+
+```
+
+Now we're sure your mind has wondered, what are THE ultimate dance treffers?
+
+We're here to ease your un-answered pains. 
+
+Again, the numbers say might bust-a-move, but maybe these don't quite make your go-to party playlist. 
+
+Planning a braai-turned disturb-the-neighbours kind of night? 
+Test-drive these top ten tuuunes, and swiftly avoid the bottom ten, and we can suggest which songs may fall into similiar categories. 
+
+```{r Dataset, message=FALSE, warning=FALSE}
+# Load the enron dataset
+dance <- toptrack %>%
+  select(year, danceability) %>%
+  group_by(year) %>%
+  as_tbl_graph() %>%
+  activate(nodes) %>%
+  mutate(
+    deg = centrality_degree()
+  )
+plot(dance)
+```
+
+What is the most likely element of a song that brings us to our feet other than it being written by Neil Diamond and titled as a an agreeable popular female name? WHO KNOWS! But we'll take a wild swing at Tempo for the time being. 
+
+When looking at the Tempo numbers, the most danceable songs have an average Tempo sitting around 116 beats per minute. 
+Go too fast, the party can go from sweet sing-alongs to a gym class your never signed up for. 
+Go too slow, you find yourself with sweaty and anxious thoughts of years in fairy-lit school halls, not being asked to dance, in a dress you payed waaay too much for, for this lame night anyway. 
+
+So mark our words - the bottom ten are a good reminder to keep it at a constant Tempo(damn should we be charging for life advice too?)
+
+```{r eval=FALSE}
+top_dancing_songs <- spotify_track_data %>%
+  arrange(desc(danceability)) %>%
+  head(10)
+
+pc1 <- ggplot(top_dancing_songs, aes(x = track_name, y = tempo, color = artist_name))
+pc1 + geom_point() +
+  geom_line()+
+  geom_hline(aes(yintercept = mean(tempo))) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+pc2 <- pc1 +
+  geom_smooth(mapping = aes(linetype = "r2"),
+              method = "lm",
+              formula = y ~ x + log(x), se = FALSE,
+              color = "red")
+
+pc2 + geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+
+The range of this graph goes from below 50 beats per minute to over 200 beats per minute. 
+
+This differs from the top danceable songs, where the graph's danceablity numbers range from 100 to 120 beats per minute. The majority of the songs also float close to the mean line. 
+
+This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
+
+
+```{r eval=False}
+bottom_dancing_songs <- spotify_track_data %>%
+  arrange(danceability) %>%
+  head(10)
+
+pg1 <- ggplot(bottom_dancing_songs, aes(x = track_name, y = tempo, color = artist_name))
+pg1 + geom_point() +
+  geom_line()+
+  geom_hline(aes(yintercept = mean(tempo))) +
+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+pg2 <- pc1 +
+  geom_smooth(mapping = aes(linetype = "r2"),
+              method = "lm",
+              formula = y ~ x + log(x), se = FALSE,
+              color = "red")
+pg2 + geom_point()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
