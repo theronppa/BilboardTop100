@@ -10,17 +10,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 # BillboardTop100 Dataset
 
-Ever wonderded what weird and wonderful facts can be deduced from looking at our favourite tracks over the past 58 years? 
+"Without music, life would be a mistake". Should we take this lightly? Would you ignore the wise words of Nietzsche? 
+Well that's who we're quoting from, and neither would we. 
 
-The best place to look for this is the Billboard Top 100. 
+Being the keen data-analysts we are, we wanted to check the numbers on our most fabourite tracks over the years. 
 
-This Dataset boasts the Top 100 hits from 1960 to 2015. This set includes four packages within the dataset that we were able to conduct network analysis and inferences upon. 
+As much as we would want to know where our beloved Johnny Clegg's and Ladysmith Black Mambazo's would rank on the charts, the best dataset to work with is of course the  Billboard Top 100. 
 
-In order to gain the most recent, and most reliable results, it was important to ensure that the years 2017 and 2018 were included in the dataset. This was done by scraping the web for songs and the lyrics of the songs for 2017 and 2018 Billboard Top 100. 
+This dataset boasts the Top 100 hits from 1960 to 2015 across the United States. This set includes four packages within the dataset that we were able to conduct network analysis and inferences upon. 
 
-Since this study is aimed towards a music dataset, it was important to clean and organize the data in a way that is approppriate for making analysis' on the dataset. 
+We had to make a few tweaks so we could dsiplay the loveliest most reliablest data for you. This meant with a little web scraing and a little love, we included the lyrics of the songs for 2017 and 2018 Billboard Top 100, on top of the incomplete downloadable set.
 
-One can download the "Billboard Hot 100" package, and within it find four useful datasets. 
+Although incomplete, within the dataset one can find a few useful packages. 
 
 ..*lyrics
 ..*spotify_playlists
@@ -369,9 +370,11 @@ ggplot(most_frequent, aes(x=reorder(artist, n), y=n)) +
  
 It seems there is always something about these hits that make them reach the infamous Hot 100. Maybe we feel our inner child come alive with every catchy "ohh-lala", or hearing it on the radio 5 times a day makes them an integral part of our routines. But just how well do these big tracks fair on the dancefloor? 
 
-Luckily, the "spotify_track_data" dataset has worked the numbers for us on how danceable each track on the charts will be. According to these numebrs, the higher the danceabilty, the better time we'll have breaking it down. 
+Luckily, the "spotify_track_data" dataset has worked the numbers for us on how danceable each song on the charts actually is. According to these numbers, the higher the danceabilty, the more we'll be breaking it down and begging the DJ for more. 
 
-Firstly, we'll look at how the danceability of tracks has changed throughout the years. In our regression graph below, little to our surprise, you can see that the disco era has proven in the numbers to have produced the music that speaks to our body and soul. Yes, boogie will always be king! 
+Firstly, we'll look at how the danceability of tracks has changed throughout the years. 
+In our regression graph below, little to our surprise, you can see that the disco era has proven in the numbers to have produced the music that speaks to our body and soul. 
+Yes, boogie will always be king! 
 
 From then on, it seems we have to make peace with the dying days of dance, and accept that flossing to Justin Bieber's Despacito is the new Saturday Night Fever(sorry Travolta). The regression line doesn't lie, neither do our hips.
 
@@ -398,7 +401,7 @@ We're here to ease your un-answered pains.
 
 Again, the numbers say might bust-a-move, but maybe these don't quite make your go-to party playlist. 
 
-Planning a braai, turned disturb-the-neighbours kind of night? 
+Planning a braai-turned disturb-the-neighbours kind of night? 
 Test-drive these top ten tuuunes, and swiftly avoid the bottom ten, and we can suggest which songs may fall into similiar categories. 
 
 ```{r Dataset, message=FALSE, warning=FALSE}
