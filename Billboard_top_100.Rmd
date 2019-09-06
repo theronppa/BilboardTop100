@@ -238,6 +238,13 @@ d <- k %>% filter(genre_data %notin% all)
 
 ```
 
+In order to get the genres of these tracks, we had search by the artist. 
+The search results would return numerous genres back, making it diffuclt to deduce significant results from the dataset. 
+
+This meant generalizing our artists into one genre.(sorry, but pop is pop is pop)
+
+Once we were able to get a genre for each artist, then we could generaliza these into 8 neat litle categories.
+
 ```{# r}
 pop <- c('dance pop', 'pop', 'pop christmas', 'post-teen pop', 'new wave pop', 'brill building pop', 'bubblegum pop', 'canadian pop', 'boy band', 'europop', 'viral pop', 'synthpop', 'pop punk', 'canadian hip hop', 'afropop', 'classic girl group', 'girl group', 'australian dance', 'k-hop')
 
@@ -314,8 +321,8 @@ Terms <- all_data %>%
 
 ```
 
+Word clouds are always a good tool to visualize all the facts. 
 
-Create a word Cloud
 ```{r eval = FALSE}
 all_data_lyrics <- all_data %>%
   select(lyrics)
@@ -342,7 +349,8 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
           colors=brewer.pal(8, "Dark2"))
 ```
 
-Which artist is featured the most? Top 20 from 1960 to 2018
+But who is crowned top of the Billboard Top 100? Let's have a look at who is featured the most from 1960-2018. 
+
 ```{r eval = FALSE}
 most_frequent <- ranked_data %>%
   group_by(artist) %>%
@@ -473,6 +481,7 @@ pg2 + geom_point()+
 ```
 
 Which Artist is the most popular in Genre?
+
 ```{r}
 
 ```
