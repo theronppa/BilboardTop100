@@ -35,20 +35,12 @@ Each of these sets provide us with useful information, regarding the different c
 
 Packages
 ```{r}
-pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr,ggplot)
+pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr)
 ```
 
 # Scraping
 
-```{r}
-data(lyrics, package="billboard")
-data(wiki_hot_100s,  package="billboard") 
-
-lyrics_only <- lyrics %>%
-  select(lyrics)
-
-ranked_data <- wiki_hot_100s %>%
-  cbind(lyrics_only)
+```{r eval=FALSE}
 
 url_2017 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2017"
 url_2018 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2018"
@@ -87,7 +79,12 @@ lyric_no_NA <- na.omit(df_all_no_lyrics)
 
 ## lyrics 
 
-```{r}
+```{r eval=FALSE}
+# authentication for spotify API
+my_oauth <- spotifyOAuth(app_id="top 100",client_id="XXXXXXXXXXXXXXXXXXXXXXXXX",client_secret="XXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+```
+
+```{r eval=FALSE}
 datalist <- list()
 for (row in 1:nrow(na_lyrics)) {
   print(row)
@@ -113,27 +110,28 @@ na_lyrics$lyrics <- lyrics_data
 
 lyrics_added <- rbind(lyric_no_NA, na_lyrics)
 # saveRDS(lyrics_added, file = "data_in/all_data_lyrics.rds")
-all_data_lyrics <- readRDS("data_in/all_data_lyrics.rds")
 ```
 
 ##  genres
 
-```{r}
+```{r eval=FALSE}
+all_data_lyrics <- readRDS("data_in/all_data_lyrics.rds")
+
 artist_genre <- list()
-for (row in 1:nrow(top_100_2017)) {
+for (row in 1:nrow(all_data_lyrics)) {
   print(row)
   if (row == 4627 | row == 4626 | row == 4628) {
     next
   }
-  if (grepl("featuring", top_100_2017[[3]][row])) {
+  if (grepl("featuring", all_data_lyrics[[3]][row])) {
     
-    z <- gsub("featuring.*","",top_100_2017[[3]][row])
+    z <- gsub("featuring.*","",all_data_lyrics[[3]][row])
     genre <- searchArtist(substr(z, 1, nchar(z)-1), token = my_oauth)[5]$genres[1]
     
     if (is.null(genre)) {
-      if (grepl("and", top_100_2017[[3]][row])) {
+      if (grepl("and", all_data_lyrics[[3]][row])) {
         
-        x <- gsub(" and.*","",top_100_2017[[3]][row])
+        x <- gsub(" and.*","",all_data_lyrics[[3]][row])
         x[] <- lapply(x, gsub, pattern='"', replacement='')
         genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
         
@@ -150,9 +148,9 @@ for (row in 1:nrow(top_100_2017)) {
       artist_genre[[row]] <- sub("\\,.*", "", genre)
     }
     
-  }else if (grepl("and", top_100_2017[[3]][row])) {
+  }else if (grepl("and", all_data_lyrics[[3]][row])) {
     
-    x <- gsub(" and.*","",top_100_2017[[3]][row])
+    x <- gsub(" and.*","",all_data_lyrics[[3]][row])
     x[] <- lapply(x, gsub, pattern='"', replacement='')
     genre <- searchArtist(x[[1]], token = my_oauth)[5]$genres[1]
     if (is.null(genre)) {
@@ -163,7 +161,7 @@ for (row in 1:nrow(top_100_2017)) {
     
   }else {
     
-    genre <- searchArtist(top_100_2017[[3]][row],token = my_oauth)[5]$genres[1]
+    genre <- searchArtist(all_data_lyrics[[3]][row],token = my_oauth)[5]$genres[1]
     if (is.null(genre)) {
       artist_genre[[row]] <- NA
     }else {
@@ -176,7 +174,7 @@ genre_data <- do.call(rbind, artist_genre)
 data_with_genre <- cbind(lyrics_added, genre_data) # 4627
 # saveRDS(data_with_genre, 'all_data_genre_not_generalised.rds')
 
-all_data_genre_ungen <- readRDS("all_data_genre_not_generalised.rds")
+
 ```
 
 In order to get the genres of these tracks, we had search by the artist. 
@@ -184,9 +182,11 @@ The search results would return numerous genres back, making it diffuclt to dedu
 
 This meant generalizing our artists into one genre.(sorry, but pop is pop is pop)
 
-Once we were able to get a genre for each artist, then we could generaliza these into 8 neat litle categories.
+Once we were able to get a genre for each artist, then we could generalize these into 8 neat litle categories.
 
-```{r}
+```{r eval=FALSE}
+all_data_genre_ungen <- readRDS("all_data_genre_not_generalised.rds")
+
 pop <- c('dance pop', 'pop', 'pop christmas', 'post-teen pop', 'new wave pop', 'brill building pop', 'bubblegum pop', 'canadian pop', 'boy band', 'europop', 'viral pop', 'synthpop', 'pop punk', 'canadian hip hop', 'afropop', 'classic girl group', 'girl group', 'australian dance', 'k-hop')
 
 rap <- c('pop rap', 'rap', 'southern hip hop', 'hip hop', 'trap music', 'dirty south rap', 'gangster rap', 'east coast hip hop', 'hardcore hip hop', 'hip pop', 'hip house', 'rap metal', 'dwn trap', 'emo rap')
@@ -219,6 +219,10 @@ all_data$genre_data <- NULL
 # saveRDS(all_data, file = "data_in/all_data.rds")
 ```
 
+```{r}
+all_data <- readRDS("data_in/all_data.rds")
+```
+
 # Cleaning 
 * section about cleaning data * 
 
@@ -233,7 +237,7 @@ This provides the opportunity the gain insight into which artists tend to collab
 
 Some pre processing cleaning
 Adding the stopwords for term frequence - to detect filthy data.
-```{r eval = False}
+```{r eval = FALSE}
 all_stops <- c(stopwords::data_stopwords_snowball$en,stopwords::data_stopwords_smart$en,"the",'" The"',"told", "and.")
 all_stops <- data.frame(all_stops)
 colnames(all_stops) <- "word"
@@ -241,18 +245,16 @@ colnames(all_stops) <- "word"
 
 Doing term frequency on the lyrics column and unnesting the words to find the most common terms and dirty data.
 ```{r eval=FALSE}
-
 all_data <- data.frame(all_data)
 Terms <- all_data %>%
   unnest_tokens(word,lyrics) %>%
   anti_join(all_stops, by = 'word')%>%
   count(word, sort = TRUE)%>%
   mutate(len=nchar(word))
-
 ```
 
 By utlizing term frequency we were able to detect common filthy data, like extra whitespace and lyric identifiers such as [Chorus] and [Verse].
-```{r eval = False}
+```{r eval = FALSE}
 all_data <- as.data.table(all_data)
 all_data$lyrics<-  gsub("([a-z])([A-Z])", "\\1 \\2", all_data$lyrics)
 
@@ -260,13 +262,25 @@ all_data[, lyrics := str_replace_all(lyrics, pattern = "\\[(.*?)\\]", "")]
 all_data$lyrics<-  gsub("([a-z]) ([A-Z])", "\\1. \\2", all_data$lyrics)
 all_data$lyrics<-  gsub(",", " ",all_data$lyrics)
 
-all_data_clean <- saveRDS(all_data,"data_out/all_data_clean.rds")
+# all_data_clean <- saveRDS(all_data,"data_out/all_data_clean.rds")
 ```
- 
+
+```{r eval=FALSE}
+all_data_clean <- readRDS("data_out/all_data_clean.rds")
+```
+
 # Report questions 
-Question 1 : Most promonent words in lyrics 
-Question 2 : Most promonent curse  words in lyrics 
-Question 3 : Most danceable era's and tempo's in most and least danceable songs
+
+* Question 1 : Evaluate Text
+
+  * Question 1.1 : Most promonent words in lyric
+  * Question 1.2 : Most promonent curse  words in lyrics 
+  
+* Question 3 : Most danceable era's and tempo's in most and least danceable songs
+
+* Question 4 : Who is crowned top of the Billboard Top 100?
+* Question 5 : What is the overall sentiment of the lyrics dataset?
+* Question 6 : Can community detection on collaboration determine genre?
 
 # Question 1 :  Most promonent words in lyrics
 The most prominent words present in the entire corpus over the last 58 years.
@@ -301,12 +315,12 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 # Question 2 : 
 Most promonent curse  words in lyrics. What is a song without some explicity? The following word cloud displays the most prominent swearwords. The swearword dictionary was proved by yours truly.
 ```{r}
-swear_words <- c("fuck","shit","freak","bastard","sex","damn","ass","cock","penis","pussy","dick","lame","slut","whore","motherfucker","hell","prick","crap","fucking","vagina")
+swear_words <- c("fuck","shit","freak","bastard","sex","damn","ass","cock","penis","pussy","dick","lame","slut","whore","motherfucker","hell","prick","crap","fucking")
 swear_words <- as.data.frame(swear_words)
 swear_words <- swear_words%>%
   rename("word" = swear_words)
 
-d_swear <- readRDS("data_out/d_word_cloud.rds")
+d_swear <- d
 
 
 swear_terms <- d_swear%>%
@@ -337,9 +351,11 @@ Yes, boogie will always be king!
 
 From then on, it seems we have to make peace with the dying days of dance, and accept that flossing to Justin Bieber's Despacito is the new Saturday Night Fever(sorry Travolta). The regression line doesn't lie, neither do our hips.
 
-<div style="width:50%;height:0;padding-bottom:75%;position:relative;"><iframe src="https://giphy.com/embed/3op5Txe6mc36sGbwOs" width="50%" height="50%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/twitter-nbaallstarweekend-3op5Txe6mc36sGbwOs">via GIPHY</a></p>
+
  
 ```{r}
+data(spotify_track_data,  package="billboard") 
+
 toptrack <- spotify_track_data %>%
   group_by(year) %>%
   summarise(danceability = n())
@@ -384,7 +400,7 @@ Go too slow, you find yourself with sweaty and anxious thoughts of years in fair
 
 So mark our words - the bottom ten are a good reminder to keep it at a constant Tempo(damn should we be charging for life advice too?)
 
-```{r eval=FALSE}
+```{r}
 top_dancing_songs <- spotify_track_data %>%
   arrange(desc(danceability)) %>%
   head(10)
@@ -413,7 +429,7 @@ This differs from the top danceable songs, where the graph's danceablity numbers
 This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
 
 
-```{r eval=False}
+```{r}
 bottom_dancing_songs <- spotify_track_data %>%
   arrange(danceability) %>%
   head(10)
@@ -432,3 +448,207 @@ pg2 <- pc1 +
 pg2 + geom_point()+
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
+
+#Question 4 :
+But who is crowned top of the Billboard Top 100? Let's have a look at who is featured the most from 1960-2018. 
+
+```{r}
+most_frequent <- all_data %>%
+  group_by(artist) %>%
+  tally() %>% 
+  select(artist, n) %>%
+  arrange(desc(n)) %>%
+  head(20)
+
+# Draw plot
+ggplot(most_frequent, aes(x=reorder(artist, n), y=n)) + 
+  geom_bar(stat="identity", width=.5, fill="tomato3") + 
+  labs(title="Top 20 Most Featured Artist", 
+       subtitle="Artist and # times featured in top 100") + 
+  theme(axis.text.x = element_text(vjust=0.6)) +
+  coord_flip() +
+  ylab("Number of features") +
+  xlab("Artist") +
+  geom_label(aes(label=n), label.padding = unit(0.080, "lines"))+
+  theme_minimal()
+```
+
+# Question 5
+
+## Sentiment Analysis
+
+There's a song for every mood, and maybe some a bit more morbid than others. 
+Ever wondered about the lyrics of the songs you listen to? 
+Upbeat tunes, but some pretty bleak lyrics, means that these songs will not score well on our sentiment analysis. 
+
+As an interesting topic, we decided to run sentiment analysis on the lyrics provided by each song and artist, to determine if artists over the years tend to write about more negative or positive sentiments. Sentiment dispersion is very diverse, as to be expected when dealing with a genre as diverse as music. Adding valence shifters to try and compensate for the probable words that can effect a negative/positve word does not add much to the 
+
+```{r fig.width=8, fig.height=8, warning = FALSE , eval= F}
+
+data(lyrics, package="billboard")
+data(wiki_hot_100s,  package="billboard") 
+
+lyrics_only <- lyrics %>%
+  select(lyrics)
+
+ranked_data <- wiki_hot_100s %>%
+  cbind(lyrics_only)
+
+sent <- sentiment_by(ranked_data$lyrics,  #does not run that long. EZ
+               polarity_dt = lexicon::hash_sentiment_jockers_rinker,
+               valence_shifters_dt = lexicon::hash_valence_shifters,
+               averaging.function = sentimentr::average_weighted_mixed_sentiment,
+               hyphen = " ",
+               amplifier.weight = 2, 
+               n.before = 3, 
+               n.after = 3,
+               question.weight = 0, 
+               adversative.weight = 0.25,
+               neutral.nonverb.like = TRUE,
+            
+)
+
+sent_tot <- ranked_data%>%
+  cbind(sent)%>%
+  select(title,artist,lyrics,year,ave_sentiment)
+
+ggplot(sent_tot, aes(x=sent_tot$year, y=sent_tot$ave_sentiment, color=year)) + 
+  geom_point(stat='identity', color="black", size=1)  +
+  geom_segment(aes(y = 0, 
+              x = sent_tot$year, 
+              yend = sent_tot$ave_sentiment, 
+              xend = sent_tot$year))+
+  labs(title="Sentiment Over the years") + 
+  ylim(-8.5, 8.5) +
+  theme(axis.text.y = element_text(colour="blue", size= 10,),legend.position = "none") +
+  coord_flip() +
+  xlab("Year") + ylab("Average Sentiment")
+
+```
+
+# Question 6
+
+## Can community detection on collaboration determine genre?
+
+### Approach 
+
+In order to answer this question we had to  < add christiaan part here >
+
+```{r}
+all_data <- readRDS("data_in/all_data.rds")
+
+all_data$lyrics <- NULL
+
+split_feat <- str_split_fixed(all_data$artist, 'featuring', 2)
+
+split_feat_song <- cbind(all_data, split_feat)
+
+split_feat_song$artist <- NULL
+
+colnames(split_feat_song) <- c('no', 'title', 'year', 'genre', 'artist_1', 'artist_2')
+
+only_colab <- split_feat_song %>%
+  filter(split_feat_song$artist_2 != "")
+
+only_colab <- only_colab[c('artist_1','artist_2','genre','title','year', 'no')]
+
+only_colab <- separate_rows(only_colab, artist_1, sep = ', ')
+only_colab <- separate_rows(only_colab, artist_2, sep = ', ')
+only_colab <- separate_rows(only_colab, artist_2, sep = 'and ')
+
+only_colab <- as.data.table(only_colab)
+only_colab[, artist_1 := str_remove_all(artist_1, pattern = "^\\s"),""]
+only_colab[, artist_2 := str_remove_all(artist_2, pattern = "^\\s"),""]
+
+only_colab[, artist_1 := str_remove_all(artist_1, pattern = "\\s$"),""]
+only_colab[, artist_2 := str_remove_all(artist_2, pattern = "\\s$"),""]
+
+only_colab_stay <- only_colab %>%
+  filter(artist_1 == "Marky Mark and the Funky Bunch" |
+         artist_1 == "Michael Franti & Spearhead" |
+         artist_1 == "Timbaland & Magoo" |
+         artist_2 == "Trina & Tamara" |
+         artist_2 == "8Ball & MJG")
+
+only_colab_rem <- subset(only_colab, artist_1 != "Marky Mark and the Funky Bunch")
+only_colab_rem <- subset(only_colab_rem, artist_1 != "Michael Franti & Spearhead")
+only_colab_rem <- subset(only_colab_rem, artist_1 != "Timbaland & Magoo")
+only_colab_rem <- subset(only_colab_rem, artist_2 != "Trina & Tamara")
+only_colab_rem <- subset(only_colab_rem, artist_2 != "8Ball & MJG")
+
+only_colab <- separate_rows(only_colab_rem, artist_1, sep = 'and ')
+only_colab <- separate_rows(only_colab, artist_1, sep = '& ')
+only_colab <- separate_rows(only_colab, artist_2, sep = '& ')
+only_colab <- separate_rows(only_colab, artist_1, sep = 'with ')
+
+colab_all <- rbind(only_colab, only_colab_stay)
+colab_all[620]$artist_2 <- "Tyga"
+colab_all[621]$artist_2 <- "Jay-Z"
+colab_all[577]$artist_1 <- "Jay-Z" #
+colab_all[743]$artist_1 <- "Jay-Z" #
+colab_all[745]$artist_1 <- "Jay-Z" #
+colab_all[733]$artist_1 <- "Ty Dolla Sign"
+colab_all[712]$artist_2 <- "Ty Dolla Sign"
+colab_all[251]$artist_1 <- "The East Side Boyz"
+colab_all[242]$artist_2 <- "The East Side Boyz"
+colab_all[13]$artist_2 <- "Snoop Dogg"
+
+colab_all <- colab_all[!(colab_all$artist_2 == ""), ]
+
+colab_all[, artist_1 := str_remove_all(artist_1, pattern = "^\\s"),""]
+colab_all[, artist_2 := str_remove_all(artist_2, pattern = "^\\s"),""]
+
+colab_all[, artist_1 := str_remove_all(artist_1, pattern = "\\s$"),""]
+colab_all[, artist_2 := str_remove_all(artist_2, pattern = "\\s$"),""]
+
+#saveRDS(colab_all, "data_in/colaboration_data.rds")
+```
+
+
+
+## 6.1 Genres found after community detection :
+
+After creating the big network of artists and collaborators, we can finally run community detection to determine which artists are grouped together, and if the genres correspond to these communities.
+
+It was assumed that collaborations would primarilly occur in the same genre. To show this, we had to split the artists column and extract all the featured artists that collaborate on a given song. We then ran the `louvain community detection` algorithm to distinguish the different artists in the defined communities. The reason why we choose the louvain method is because of it's fast processing time, responsiveness and accuracy on bigger datasets like this one.
+
+
+
+After applying Luvain community detection 
+```{r}
+knitr::include_graphics('DiagramsGephi/Screenshot1 .png') 
+knitr::include_graphics('DiagramsGephi/Rock.png') 
+```
+Using our intiution, open further investigation, it was found that certain communities have artists that collaborate with other artists that we associate with the same genre, proving our assumption. It is also important to take note that there were other bridging nodes that collaborated outside of the main cluster, as this also confirms our assumption that different communities can exist, but different artists can act as bridges for further collaboration.
+
+### Changing Edge colors to reveal actual gendres
+<explain how majority of communities that were detected had the same genres > this could aid in supporting the assumption that collaborations primarily occur within communities.>
+```{r}
+knitr::include_graphics('DiagramsGephi/Rock.png') 
+```
+
+
+## 6.2 Cam someone be a bridge to other genre communities : 
+
+We did this by focusing on one communty in our data and looking at how certain artist acted as bridges to other genres. 
+Rihanna can be seen playing this role as a bridge between the electronic, rap , and pop communities.
+```{r}
+knitr::include_graphics('DiagramsGephi/Screenshot2.png') 
+knitr::include_graphics('DiagramsGephi/Screenshot3.png')  #focused community
+```
+
+Three different genre communities: 
+```{r echo=FALSE, fig.align='center'}
+knitr::include_graphics('DiagramsGephi/ScreenshotCalvin.png')  #Calvin community Elelctronic
+knitr::include_graphics('DiagramsGephi/ScreenshotRap.png')   # Rap communinty 
+knitr::include_graphics('DiagramsGephi/ScreenschotDrake.png')  # Pop community 
+```
+
+Rihanna as bridge
+```{r fig.align='center'}
+knitr::include_graphics('DiagramsGephi/ScreenshotRiri.png')   # Rihanna as bridge 
+```
+
+
+
+
