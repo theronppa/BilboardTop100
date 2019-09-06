@@ -24,12 +24,13 @@ library(tidytext)
 library(graphlayouts)
 library(igraph)
 library(data.table)
+library(plyr)
 ```
 
 Fetch All Data
 #Fetched DATA
 ```{r}
-colaboration_data <- readRDS("~/Documents/GitHub/BilboardTop100/colaboration_data.rds")
+colaboration_data <- readRDS("colaboration_data.rds")
 ```
 
 # Converted 
@@ -45,6 +46,19 @@ colab_detect <- colaboration_data_tbl %>%
          degree_betw = centrality_betweenness())
 
 colab_detect_igraph <- as.igraph(colab_detect)
+```
+# What are the most featured genres in the respective years?
+```{r}
+years <- colaboration_data %>%
+  distinct(year) %>%
+  select(year)
+
+genre_per_year <- colaboration_data %>%
+  group_by(year, genre) %>%
+  tally() %>%
+  select(year, genre, n)
+
+ggplot(genre_per_year, aes(x = year, y = n, color = genre), color = "blue") + geom_point(stat = "identity") + theme(axis.text.x = element_text(angle = 90))
 ```
 
 LAST STEP
