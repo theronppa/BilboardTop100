@@ -50,7 +50,7 @@ Before we started gaining insight from the dataset we needed to run through some
 
 Like we mentioned, the current dataset provided by `Billboard` does not have the top 100 songs for 2017 and 2018. Utilizing the `rvest package` to scrape the Wikipedia website we were able to grab the remaining songs’ titles and artists for the Billboard top 100!
 
-```{r eval=FALSE}
+```{r eval=FALSE, include=FALSE}
 
 url_2017 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2017"
 url_2018 <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_2018"
@@ -668,32 +668,26 @@ Upon observation, there definitely seems to be a distinction between where artis
 
 
 Looking back at our question,  we need to determine if this graph does in fact correlate to genres. 
-Not applying any statistical inferences, at this point, it does seem that similar artists like Drake, Kanye West and DJ Khaled group together within the network pointing to some truth to our assumptions.  
-
-To further investigate the viability of our assumption we added genre to the edges to see if the communities truly reflect a common link of genre. 
-
-We applied some data analysis methods in R to sample genres and give back stats on the ratios of genres found inside a community. 
-
+By just looking at graph, the it does seem that similar artists group together (like that of Drake, Kanye West and DJ Khaled ). This could be leaning in favour of our assumption. To truly see wether these communities are show casting  genres we needed to extract the genre ratios found in each community to determine wether one genre is promonent within the communities.
 For our assumption to be true we would have like to see a higher correlation with the ratio of one genres per community and the paramenters of a community. 
 
-The result from our stats in R were as follwos: 
-70% < 100% genre > 
-94% < >50% > 
 
-Thus….
+To do this we took our `collaboration dataset` and commaring the edge and node tables determined:
+1. Which genres where in a give community &
+2. What were the genres ratio proportinal to the communites size. 
 
-
-
-
-
-*end*
-
-<explain how majority of communities that were detected had the same genres > this could aid in supporting the assumption that collaborations primarily occur within communities.>
+*Our findings:*
+From the 100 identified communities 70% of them had one primary genre and 94%  of the communities had a genre that made up more than 50% of the communities size.  This is great news as it shows how the community detection and genres had somthing incommon when it came to collaborating artist. 
+Below are a few samples from the Dataset and their respective genre ratios. 
 ```{r echo=FALSE, out.width='25%'}
 knitr::include_graphics('DiagramsGephi/100.png') 
 knitr::include_graphics('DiagramsGephi/mix.png') 
 knitr::include_graphics('DiagramsGephi/87.png') 
 ```
+
+From this we can see how the majority of the communities that were detected had the  genres > this could aid in supporting the assumption that collaborations primarily occur within communities.>
+
+From this we can concluded that the factors that were leading groups to  collaborate in communities could definitly be linked to the genres of those artists. 
 
 
 ## Question 7 : Are there opportunities for more collaboration through mutual ties?
