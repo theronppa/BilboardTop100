@@ -1,0 +1,110 @@
+---
+title: "Genre-Ratio"
+author: "Dream team"
+date: "07/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggraph)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(tibble)
+library(tidygraph)
+library(igraph)
+library(data.table)
+```
+
+# Fetched DATA
+```{r}
+#colaboration_data <- readRDS(data_in/colaboration_data.rds)
+```
+
+The point of this markdown was to see the proportions of genres in the communities we detected for Question 6.
+
+Comments will flow like this: 
+1. Create two dataset: one for NODE and one for EDGEs
+2. Filter for just one Community 
+3. Extract edges that occure JUST in that community
+4. Extract the Genres of those edges into list
+5. Summarize the genres data into ratios proportional to community size.
+6. Put this logic into a loop and do it 100 times 
+7. save everything into one dataset -> GenreRatio_DB
+
+
+# Converted data
+convert data to as_tbl_graph
+```{r}
+colaboration_data_tbl2 <- as_tbl_graph(colaboration_data, directed = FALSE)
+```
+
+# 1. Create two dataset: one for NODE and one for EDGEs
+Run community detection to assign each node to a community.
+```{r}
+colab_detect <- colaboration_data_tbl2 %>%
+  mutate(comm_detec = group_louvain())
+
+comm_node <- as.data.frame(colab_detect) #node
+comm_edg <- colab_detect %>%             #edge
+            activate(edges) %>%
+            as.data.frame()
+```
+
+Add a Matching Row number ID ( to link the two data sets... From# To# ID#)
+```{r}
+comm_node$ID <- 1:nrow(comm_node) 
+```
+
+# 2. Filter for just one Community 
+```{r}
+# Create empty db
+GenreRatio_DB <- data.frame(
+                      Com_e = integer(),
+                      Freq = character(),
+                      Comm = character(),
+                      Ratio = integer())
+  
+for(x in 1:100){
+  com_n <- comm_node %>%
+    filter(comm_detec == 1)
+  
+  
+# 4 Extract the Genres of those edges into list
+  
+  Com_e <- NULL
+  for( y in 1:nrow(comm_edg)){
+      if(comm_edg$to[y] %in% com_n$ID & comm_edg$from[y] %in% com_n$ID == TRUE){
+        Com_e <-append(Com_e,comm_edg$genre[y])
+      }
+  }
+
+# 5 Summarize the genres data into ratios proportional to community size.
+  Total <- length(Com_e)
+  summary <- as.data.frame(table(Com_e))
+  summary$Comm <- x
+  Ratio <- NULL
+  for(z in 1:length(summary$Freq)){
+    ratio2 <- round((summary$Freq[z]/Total),2)
+    Ratio <- append(Ratio,ratio2)
+  }
+  Ratio_COL <- as.data.frame(Ratio)
+  summary <- cbind(summary,Ratio_COL)
+  GenreRatio_DB<- rbind(GenreRatio_DB,summary)  #7 save everything into one dataset -> GenreRatio_DB
+  summary
+}
+GenreRatio_DB
+```
+
+
+```{r}
+GenreRatio_DB <- saveRDS(GenreRatio_DB,"data_out/community_genre_ratio.rds")
+```
+
+
+
+```
