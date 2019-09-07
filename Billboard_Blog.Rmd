@@ -35,6 +35,8 @@ Although incomplete, within the dataset one can find a few useful packages.
 
 Each of these sets provide us with useful information, regarding the different characteristics of the tracks.
 
+In order to run the entire process of getting all the data needed to run the analysis, a spotify user token needs to be created. We won't go to into much detail here, but you can follow the guide here https://www.rcharlie.com/spotifyr/.
+
 Packages used:
 ```{r}
 pacman::p_load(tidygraph, igraph, igraphdata,billboard,tidytext,readr,dplyr,tidyverse,sentimentr, data.table,magrittr,ggridges,ggplot2,textcat, readr,ggpubr,ggplot2,tm,SnowballC,wordcloud,stringr,ggraph, Rspotify, rvest, genius, tidyr)
@@ -46,7 +48,7 @@ Before we started gaining insight from the dataset we needed to run through some
 
 ## 1. Scraping Data 
 
-Like we mentioned , the current dataset provided by `Billboard` does not have the top 100 songs for 2017 and 2018, utilizing the `rvest package` to scrape the Wikipedia website we were able to grab the remaining songs’ titles and artists for the Billboard top 100!.
+Like we mentioned, the current dataset provided by `Billboard` does not have the top 100 songs for 2017 and 2018. Utilizing the `rvest package` to scrape the Wikipedia website we were able to grab the remaining songs’ titles and artists for the Billboard top 100!
 
 ```{r eval=FALSE}
 
@@ -188,7 +190,7 @@ data_with_genre <- cbind(lyrics_added, genre_data) # add all data together
 ```
 
 In order to get the genres of these tracks, we had search by the artist. 
-It was identifed that there was over 800 different genre making it difficult to deduce significant results from the dataset.
+It was identifed that there was over 800 different genres making it difficult to deduce significant results from the dataset.
 We thus decided for community and conveinence sake, to generalise them into broader groups.(sorry, but pop is pop is pop)
 
 Once we were able to get a genre for each artist, then we could generalize these into 8 neat little categories. 
@@ -249,10 +251,10 @@ Now that we had all our data updated, the next phase was to start cleaning to en
 
 *Separating Artists* 
 One of the biggest challenges was seperating the artists from the featured artists. This posed an indepth cleaning regime by using regular expressions and packages from R to seperate the different artists into their own respective columns. By doing this, we can create a network of artists and their collaborators, and link their respective featured songs as edges. 
-Another challenge was collecting lyrics for songs that were not available on the original dataset - so we had to pull it from an external source via a scrapper. 
+Another challenge was collecting lyrics for songs that were not available on the original dataset - so we had to pull it from an external source via a scraper. 
 
 *Generalizing Genres*
-As genre's are an important aspect of this analysis - we had to pull in genres from a Spotify API, and generalise them this took some time to sort them into generalizations and checking smaller samples to ensure the results made sense. 
+As genres are an important aspect of this analysis - we had to pull in genres from a Spotify API, and generalise them. This took some time to sort them into generalizations and checking smaller samples to ensure the results made sense. 
 This provides the opportunity the gain insight into which artists tend to collaborate together and which genre is the most popular among the community of artists.
 
 *Cleaning Lyrics*
@@ -307,7 +309,7 @@ With our data clean and relevant we can finally start the exciting phase of anal
 ## Question 1.1 :  Most promonent words in lyrics
 The most prominent words present in the entire corpus over the last 58 years.
 Word clouds are always a good tool to visualize all the facts. By unnesting the different words within the lyrics column and transforming it into a document term matrix we were able to create a dataset consisting of only the most prominently used words.As you can see, the heart wants what it wants. Love will always be on the top of our silly human minds as well as your significant other not - not 3 month old humans.
-```{r eval= FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 all_data_lyrics <- all_data %>%
   select(lyrics)
 corpus <- Corpus(VectorSource(all_data_lyrics$lyrics))
@@ -334,8 +336,8 @@ wordcloud(words = d$word, freq = d$freq, min.freq = 1,
 
 
 
-## Question 1.2 : 
-Most promonent curse  words in lyrics. What is a song without some explicity? The following word cloud displays the most prominent swearwords. The swearword dictionary was proved by yours truly.
+## Question 2.1 : 
+Most promonent curse  words in lyrics. What is a song without some explicity? The following word cloud displays the most prominent swearwords. The swearword dictionary was provided by yours truly.
 ```{r message=FALSE, warning=FALSE}
 swear_words <- c("fuck","shit","freak","bastard","sex","damn","ass","cock","penis","pussy","dick","lame","slut","whore","motherfucker","hell","prick","crap","fucking")
 swear_words <- as.data.frame(swear_words)
@@ -357,6 +359,7 @@ wordcloud(words = swear_terms$word, freq = swear_terms$freq, min.freq = 1,
           colors=brewer.pal(8, "Dark2"))
 ```
 
+## Question 2.2 : 
 Phew, those were some hefty answers in the swear-word-cloud. Has music always been as vulgar as this? Looking back, using the oh-so-useful Spotify data we can identify if a song is generalized as explicit or not. Clearly those old people were on to something as the vulgar-ness of music has risen over the last phew decades. Being almost non existent. Peaking in the early 2000's to an absurd degree of more than 30 explicit songs on the billboard 100. One can argue that since the dawn of the new decade a more modern PC culture has been adapted - for better and for worse - therefore resulting in the explicitness of the modern treffer to be tamer than its predecessors.
 
 ```{r echo=FALSE}
@@ -379,7 +382,7 @@ ggplot(tab_sum, aes(x= tab_sum$year, y =tab_sum$trues)) +
 
 ## Question 3 :  Most danceable era's and tempo's in most and least danceable songs
 
-It seems there is always something about these hits that make them reach the infamous Hot 100. Maybe we feel our inner child come alive with every catchy "ohh-lala", or hearing it on the radio 5 times a day makes them an integral part of our routines. But just how well do these big tracks fair on the dancefloor? 
+It seems there is always something about these hits that make them reach the infamous Hot 100. Maybe we feel our inner child come alive with every catchy "ohh-lala", or hearing it on the radio 5 times a day makes them an integral part of our routines. But just how well do these big tracks fare on the dancefloor? 
 
 Luckily, the `spotify_track_data` dataset has worked the numbers for us on how danceable each song on the charts actually is. According to these numbers, the higher the danceabilty, the more we'll be breaking it down and begging the DJ for more. 
 
@@ -415,7 +418,7 @@ Again, the numbers say might bust-a-move, but maybe these don't quite make your 
 Planning a braai-turned disturb-the-neighbours kind of night? 
 Test-drive these top ten tuuunes, and swiftly avoid the bottom ten, and we can suggest which songs may fall into similiar categories. 
 
-```{r Dataset, message=FALSE, warning=FALSE}
+```{r Dataset, echo=FALSE, message=FALSE, warning=FALSE}
 dance <- toptrack %>%
   select(year, danceability) %>%
   group_by(year) %>%
@@ -436,7 +439,7 @@ Here one can see that the circle indicates the different years and the squares r
 plot(dance, vertex.label.color="black", vertex.size=(2-V(dance)$type)*8)
 ```
 
-What is the most likely element of a song that brings us to our feet other than it being written by Neil Diamond and titled as a an agreeable popular female name? WHO KNOWS! But we'll take a wild swing at Tempo for the time being. 
+What is the most likely element of a song that brings us to our feet other than it being written by Neil Diamond and titled as an agreeable popular female name? WHO KNOWS! But we'll take a wild swing at Tempo for the time being. 
 
 When looking at the Tempo numbers, the most danceable songs have an average Tempo sitting around 116 beats per minute. 
 Go too fast, the party can go from sweet sing-alongs to a gym class your never signed up for. 
@@ -444,7 +447,7 @@ Go too slow, you find yourself with sweaty and anxious thoughts of years in fair
 
 So mark our words - the bottom ten are a good reminder to keep it at a constant Tempo. (damn should we be charging for life advice too?)
 
-```{r}
+```{r echo=FALSE}
 top_dancing_songs <- spotify_track_data %>%
   arrange(desc(danceability)) %>%
   head(10)
@@ -455,14 +458,6 @@ pc1 + geom_point() +
   geom_hline(aes(yintercept = mean(tempo))) +
 theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-pc2 <- pc1 +
-  geom_smooth(mapping = aes(linetype = "r2"),
-              method = "lm",
-              formula = y ~ x + log(x), se = FALSE,
-              color = "red")
-
-pc2 + geom_point()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
@@ -473,7 +468,7 @@ This differs from the top danceable songs, where the graph's danceablity numbers
 This shows that a tempo around 116-120 beats per mintue is the best for a popular dancing song. 
 
 
-```{r message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 bottom_dancing_songs <- spotify_track_data %>%
   arrange(danceability) %>%
   head(10)
@@ -520,9 +515,7 @@ ggplot(most_frequent, aes(x=reorder(artist, n), y=n)) +
 From the plot above, you can clearly see who the top dog is. It seems that time does not go slowly for her, as Madonna has reached the top 100 over 30 times! This can be attributed to the fact that she was super popular during the 1980's till the mid 2000's, releasing smash hit after smash hit. All hail the original 'Queen of Pop'!
 Following this, the next topic will investigate the sentiment of lyrics – let’s see what the most positive and most negative words were throughout the history of billboard bangers!
 
-## Question 5 :
-
-### Sentiment Analysis
+## Question 5 :Sentiment Analysis
 
 There's a song for every mood, and maybe some a bit more morbid than others. 
 Ever wondered about the lyrics of the songs you listen to? 
@@ -530,7 +523,7 @@ Upbeat tunes, but some pretty bleak lyrics, means that these songs will not scor
 
 As an interesting topic, we decided to run sentiment analysis on the lyrics provided by each song and artist, to determine if artists over the years tend to write about more negative or positive sentiments. Sentiment dispersion is very diverse, as to be expected when dealing with a genre as diverse as music. Adding valence shifters to try and compensate for the probable words that can effect a negative/positve word does not add much to the overall sentiments as bands tend to repeat negative words like 'Shake' and that is according to Jockers/Rinkers. Bad. Old People amiright?
 
-```{r fig.width=8, fig.height=8, warning = FALSE}
+```{r echo=FALSE, fig.height=8, fig.width=8, warning=}
 
 data(lyrics, package="billboard")
 data(wiki_hot_100s,  package="billboard") 
@@ -582,7 +575,7 @@ To answer this question we followed the following method:
 3. Do simple community detection on the data.
 4. Map it in gephi and observe results.
 5. Map accutal Genres on the community graph.
-6. Determine if our question is valid. <HERE I"M STILL DOING SOME ANALYSIS>
+6. Determine if our question is valid.
 
 For step 1  we had to split the artist column where artist collaborated on a song. 
 Collaborations were identified by the key words: 'featuring', 'and', 'with', ',' and '&'. There are some artists that have these keywords, they were excluded for the extraction process.
@@ -659,19 +652,47 @@ Now the data should be ready and all the collaborating artists will be split! Le
 
 Communities are an important part to the analysis of this dataset. Although genres act as a sort of label for artists, we want to find out if community detection can correlate with the labelled genres. By forming clusters with collaborating artist we are able to detect inherent communities via a community detection aldu-rhythm called Louvain.
 
-It was assumed that collaborations would primarilly occur in the same genre. We thus ran the `louvain community detection` algorithm to distinguish the different artists in the defined communities. The reason why we choose the louvain method is because of it's fast processing time, responsiveness and accuracy on bigger datasets like this one.
+It was assumed that collaborations would primarily occur in the same genre. We thus ran the `Louvain community detection` algorithm to distinguish the different artists in the defined communities. The reason why we choose the Louvain method is because of its fast processing time, responsiveness and accuracy on bigger datasets like this one.
 
 This was the result after applying Louvain community detection:
 ```{r echo=FALSE}
 knitr::include_graphics('DiagramsGephi/Screenshot1 .png') 
 ```
 
-Appon the Figure of the data it was found that certain communities have artists that collaborate with other artists that we associate with the same genre, proving our assumption. It is also important to take note that there were other bridging nodes that collaborated outside of the main cluster, as this also confirms our assumption that different communities can exist, but different artists can act as bridges for further collaboration.
+The graph  above was coloured according to different communities. 
+Originally there was 100 different identified communities but for visualization purposes we filtered for the 9  biggest communities. 
+Upon observation, there definitely seems to be a distinction between where artists primarily collaborate. With many of them staying within their communities and a few branching out to surrounding  communities. 
 
-### Changing Edge colors to reveal actual gendres
+
+*Changing Edge colors to reveal actual gendres*
+
+
+Looking back at our question,  we need to determine if this graph does in fact correlate to genres. 
+Not applying any statistical inferences, at this point, it does seem that similar artists like Drake, Kanye West and DJ Khaled group together within the network pointing to some truth to our assumptions.  
+
+To further investigate the viability of our assumption we added genre to the edges to see if the communities truly reflect a common link of genre. 
+
+We applied some data analysis methods in R to sample genres and give back stats on the ratios of genres found inside a community. 
+
+For our assumption to be true we would have like to see a higher correlation with the ratio of one genres per community and the paramenters of a community. 
+
+The result from our stats in R were as follwos: 
+70% < 100% genre > 
+94% < >50% > 
+
+Thus….
+
+
+
+
+
+*end*
+
 <explain how majority of communities that were detected had the same genres > this could aid in supporting the assumption that collaborations primarily occur within communities.>
-```{r echo=FALSE}
-knitr::include_graphics('DiagramsGephi/Rock.png') 
+```{r echo=FALSE, out.width='25%'}
+knitr::include_graphics('DiagramsGephi/100.png') 
+knitr::include_graphics('DiagramsGephi/mix.png') 
+knitr::include_graphics('DiagramsGephi/87.png') 
 ```
 
 
@@ -685,7 +706,9 @@ knitr::include_graphics('DiagramsGephi/Screenshot2.png')
 
 Highlighting the bridges between the different clusters helps us identify the way in which communities can be linked to each other. Bridges in our case are amazing opportunities for more mixes to our grooves.  Who wants just some plain old country when you could be jamming out to possible Canadian-country-punk-rap collaborations.
 
-We were able to observe such an ocurrence in Drake’s pop community. Here, Rihanna seems to be playing a strong bridging role in her community exposing it to more genres and possibily making it easier for artists inside her community to do future collaborations through her existing ties.
+We were able to observe such an ocurrence in Drake’s pop community.
+As you can see by the weighting in the edges( which were weighted according to the amount of collaboration between nodes),  artists seem to constantly collaborate within their communities with a few of them branching out into different communities. 
+Here, Rihanna seems to be playing a strong bridging role in her community exposing it to more genres and possibily making it easier for artists inside her community to do future collaborations through her existing ties.
 
 *Drake's Pop Community*
 ```{r echo=FALSE, fig.align='center' }
